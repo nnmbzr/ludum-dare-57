@@ -1,0 +1,36 @@
+{
+  "name": "pixi-8-template",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npm run dev",
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --check src",
+    "format:fix": "prettier --write src",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@esotericsoftware/spine-pixi-v8": "^4.2.66",
+    "@pixi/sound": "^6.0.1",
+    "@pixi/ui": "^2.2.0",
+    "gsap": "^3.12.5",
+    "pixi.js": "^8.6.3"
+  },
+  "devDependencies": {
+    "@assetpack/core": "^1.2.3",
+    "@pixi/devtools": "^2.0.1",
+    "eslint": "9.17.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "prettier": "^3.4.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.19.1",
+    "vite": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.20.2 <19.0.0"
+  }
+}
