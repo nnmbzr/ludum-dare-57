@@ -13,6 +13,7 @@ import gsap from 'gsap';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../main';
 import { ParallaxOwl } from './ParallaxOwl';
 import { ParallaxBack } from '../gameScreen/ParallaxBack';
+import { ParallaxStartScreen } from './ParallaxStartScreen';
 // import { ParallaxProgrammBack } from './ParallaxProgrammBack';
 
 /** The screen that holds the app */
@@ -30,6 +31,8 @@ export class TestingScreen extends Container implements AppScreen {
 
   private parallaxOwl: ParallaxOwl;
   private parallaxBack: ParallaxBack;
+
+  private mainScreenSpine: ParallaxStartScreen;
 
   // private parallaxBackground: ParallaxProgrammBack;
 
@@ -95,15 +98,19 @@ export class TestingScreen extends Container implements AppScreen {
     this.parallaxOwl = new ParallaxOwl('owl-pro');
     this.parallaxOwl.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     this.parallaxOwl.scale.set(0.5);
-    this.addChild(this.parallaxOwl);
+    // this.addChild(this.parallaxOwl);
 
     this.parallaxBack = new ParallaxBack('bg_test');
     this.parallaxBack.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     this.parallaxBack.scale.set(0.5);
-    this.addChild(this.parallaxBack);
+    // this.addChild(this.parallaxBack);
 
     this.onglobalmousemove = this.onMouseMove.bind(this);
     this.eventMode = 'static';
+
+    this.mainScreenSpine = new ParallaxStartScreen('startscreen');
+    this.mainScreenSpine.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    this.addChild(this.mainScreenSpine);
 
     /* this.spine.on('pointerdown', (e) => {
       // TODO: пример приведения координат клика к виртуальной позиции
@@ -125,6 +132,7 @@ export class TestingScreen extends Container implements AppScreen {
 
     this.parallaxOwl.onMouseMove(x, y);
     this.parallaxBack.onMouseMove(x, y);
+    this.mainScreenSpine.onMouseMove(x);
     // this.parallaxBackground.onMouseMove(x, y);
   }
 
@@ -141,6 +149,7 @@ export class TestingScreen extends Container implements AppScreen {
 
     this.parallaxOwl.update(delta);
     this.parallaxBack.update(delta, 1);
+    this.mainScreenSpine.update(delta);
     // this.parallaxBackground.update(delta);
   }
 
