@@ -2,7 +2,7 @@ import { randomFloat } from '../../../engine/utils/random';
 import { waitFor } from '../../../engine/utils/waitFor';
 
 import { DIRECTION, Logo } from './Logo';
-import type { MainScreen } from './MainScreen';
+import type { TestingScreen } from './TestingScreen';
 import gsap from 'gsap';
 
 export class Bouncer {
@@ -10,7 +10,7 @@ export class Bouncer {
   private static readonly ANIMATION_DURATION = 1;
   private static readonly WAIT_DURATION = 0.5;
 
-  public screen!: MainScreen;
+  public screen!: TestingScreen;
 
   private allLogoArray: Logo[] = [];
   private activeLogoArray: Logo[] = [];
@@ -19,7 +19,7 @@ export class Bouncer {
   private xMin = -400;
   private xMax = 400;
 
-  public async show(screen: MainScreen): Promise<void> {
+  public async show(screen: TestingScreen): Promise<void> {
     this.screen = screen;
     for (let i = 0; i < Bouncer.LOGO_COUNT; i++) {
       this.add();
