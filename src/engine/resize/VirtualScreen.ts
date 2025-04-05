@@ -105,8 +105,8 @@ export class VirtualScreen {
    */
   public toVirtualCoordinates(x: number, y: number): { x: number; y: number } {
     return {
-      x: (x - this.gameContainer.x) / this.scale,
-      y: (y - this.gameContainer.y) / this.scale,
+      x: Math.max(0, (x - this.gameContainer.x) / this.scale),
+      y: Math.max(0, (y - this.gameContainer.y) / this.scale),
     };
   }
 
