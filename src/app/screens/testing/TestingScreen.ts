@@ -140,7 +140,7 @@ export class TestingScreen extends Container implements AppScreen {
     const delta = _time.elapsedMS / 1000;
 
     this.parallaxOwl.update(delta);
-    this.parallaxBack.update(delta);
+    this.parallaxBack.update(delta, 1);
     // this.parallaxBackground.update(delta);
   }
 

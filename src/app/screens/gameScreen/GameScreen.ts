@@ -9,6 +9,7 @@ import { AppScreen } from '../../../engine/navigation/navigation';
 import gsap from 'gsap';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../main';
 import { ParallaxBack } from './ParallaxBack';
+import { CameraHorizontalMove } from './CameraHorizontalMove';
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -20,6 +21,8 @@ export class GameScreen extends Container implements AppScreen {
   private paused = false;
 
   private parallaxBack: ParallaxBack;
+
+  private cameraHorizontalMove: CameraHorizontalMove;
 
   constructor() {
     super();
@@ -48,12 +51,17 @@ export class GameScreen extends Container implements AppScreen {
       animations: buttonAnimations,
     });
     this.settingsButton.onPress.connect(() => engine().navigation.presentPopup(SettingsPopup));
+    this.settingsButton.position.set(SCREEN_WIDTH - 30, 30);
     this.addChild(this.settingsButton);
 
     this.parallaxBack = new ParallaxBack('bg_test');
     this.parallaxBack.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    // TODO: временный x2 скейл! УБРАТЬ!
     this.parallaxBack.scale.set(0.5);
-    this.addChild(this.parallaxBack);
+    this.mainContainer.addChild(this.parallaxBack);
+
+    // TODO: временный x2 скейл! УБРАТЬ!
+    this.cameraHorizontalMove = new CameraHorizontalMove(this.mainContainer, this.parallaxBack.width);
 
     this.onglobalmousemove = this.onMouseMove.bind(this);
     this.eventMode = 'static';
@@ -63,6 +71,12 @@ export class GameScreen extends Container implements AppScreen {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
     this.parallaxBack.onMouseMove(x, y);
+    this.cameraHorizontalMove.onMouseMove(x);
+
+    // console.log('camera offset', cameraOffset);
+
+    // console.log('pure width', pureWidth);
+    // console.log('base offset', baseOffset);
   }
 
   /** Prepare the screen just before showing */
@@ -75,7 +89,8 @@ export class GameScreen extends Container implements AppScreen {
 
     const delta = _time.elapsedMS / 1000;
 
-    this.parallaxBack.update(delta);
+    const cameraOffset = this.cameraHorizontalMove.getCameraOffset();
+    this.parallaxBack.update(delta, cameraOffset);
   }
 
   /** Pause gameplay - automatically fired when a popup is presented */
@@ -92,17 +107,6 @@ export class GameScreen extends Container implements AppScreen {
 
   /** Fully reset */
   public reset() {}
-
-  /** Resize the screen, fired whenever window size changes */
-  public resize(width: number, height: number) {
-    const centerX = width * 0.5;
-    const centerY = height * 0.5;
-
-    this.mainContainer.x = centerX;
-    this.mainContainer.y = centerY;
-    this.settingsButton.x = width - 30;
-    this.settingsButton.y = 30;
-  }
 
   /** Show screen with animations */
   public async show(): Promise<void> {
