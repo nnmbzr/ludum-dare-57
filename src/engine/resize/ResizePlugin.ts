@@ -61,8 +61,8 @@ export class CreationResizePlugin {
     app.virtualScreen.letterboxColor = letterboxColor;
 
     // Add containers to stage
-    app.stage.addChild(app.virtualScreen.letterboxContainer);
     app.stage.addChild(app.virtualScreen.gameContainer);
+    app.stage.addChild(app.virtualScreen.letterboxContainer);
 
     // Важно: используем приватную переменную для хранения значения resizeTo
     Object.defineProperty(app, 'resizeTo', {

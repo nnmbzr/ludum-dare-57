@@ -1,6 +1,5 @@
 import { setEngine } from './app/getEngine';
-// import { LoadScreen } from './app/screens/LoadScreen';
-import { TestingScreen } from './app/screens/main/TestingScreen';
+import { GameScreen } from './app/screens/gameScreen/GameScreen';
 // import { LoadScreen } from './app/screens/LoadScreen';
 import { userSettings } from './app/utils/userSettings';
 import { CreationEngine } from './engine/engine';
@@ -31,7 +30,7 @@ setEngine(engine);
       virtualWidth: SCREEN_WIDTH, // Фиксированное виртуальное разрешение по ширине
       virtualHeight: SCREEN_HEIGHT, // Фиксированное виртуальное разрешение по высоте
       letterbox: true, // Включаем режим letterbox
-      letterboxColor: 0xffffff, // Цвет заглушек по бокам (совпадает с фоном)
+      letterboxColor: 0x000000, // Цвет заглушек по бокам (совпадает с фоном)
     },
   });
 
@@ -48,5 +47,5 @@ setEngine(engine);
   // await engine.navigation.showScreen(LoadScreen);
 
   // Show the main screen once the load screen is dismissed
-  await engine.navigation.showScreen(TestingScreen);
+  await engine.navigation.showScreen(GameScreen);
 })();
