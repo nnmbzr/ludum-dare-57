@@ -7,6 +7,9 @@ export class ParallaxBack extends Container {
   private readonly backHeight: number = 1080;
 
   private currentCameraOffset: number = 0;
+  private lastMouseX: number = 0;
+  private lastMouseY: number = 0;
+  private needRecalculate: boolean = true;
 
   private readonly directionTracks = {
     up: 2,
@@ -43,32 +46,48 @@ export class ParallaxBack extends Container {
   }
 
   public onMouseMove(mouseX: number, mouseY: number) {
-    // Получаем центр экрана/области
-    const centerX = this.x;
-    const centerY = this.y;
-
-    // Вычисляем относительное положение курсора
-    const relativeX = mouseX;
-    const relativeY = mouseY;
-
-    // Нормализуем к ширине/высоте экрана
-    const maxDistanceW = SCREEN_WIDTH / 2;
-    const maxDistanceH = SCREEN_HEIGHT / 2;
-
-    // Вычисляем веса анимаций на основе официальной формулы Spine
-    this.updateDirectionWeightsSpineStyle(relativeX, relativeY, centerX, centerY, maxDistanceW, maxDistanceH);
+    // Проверяем, изменилась ли позиция мыши
+    if (this.lastMouseX !== mouseX || this.lastMouseY !== mouseY) {
+      this.lastMouseX = mouseX;
+      this.lastMouseY = mouseY;
+      this.needRecalculate = true;
+    }
   }
 
   public update(delta: number, cameraOffset: number) {
+    // Проверяем, изменился ли сдвиг камеры
+    if (this.currentCameraOffset !== cameraOffset) {
+      this.currentCameraOffset = cameraOffset;
+      this.needRecalculate = true;
+    }
+
+    // Пересчитываем веса только при необходимости
+    if (this.needRecalculate) {
+      // Получаем центр экрана/области
+      const centerX = this.x;
+      const centerY = this.y;
+
+      // Используем сохраненные координаты мыши
+      const relativeX = this.lastMouseX;
+      const relativeY = this.lastMouseY;
+
+      // Нормализуем к ширине/высоте экрана
+      const maxDistanceW = SCREEN_WIDTH / 2;
+      const maxDistanceH = SCREEN_HEIGHT / 2;
+
+      // Вычисляем веса анимаций
+      this.updateDirectionWeightsSpineStyle(relativeX, relativeY, centerX, centerY, maxDistanceW, maxDistanceH);
+
+      // Сбрасываем флаг после пересчета
+      this.needRecalculate = false;
+    }
+
     // Интерполяционный фактор для плавности (меньше = плавнее)
     const interpolationFactor = 0.1;
-
-    this.currentCameraOffset = cameraOffset;
 
     // Интерполируем текущие веса к целевым для плавности
     Object.keys(this.currentWeights).forEach((direction) => {
       const targetWeight = this.targetWeights[direction as keyof typeof this.targetWeights];
-
       this.currentWeights[direction] += (targetWeight - this.currentWeights[direction]) * interpolationFactor;
     });
 
@@ -109,12 +128,10 @@ export class ParallaxBack extends Container {
 
     const backW = this.backWidth;
     const pureWidth = (backW - SCREEN_WIDTH) / backW;
-    // const baseOffset = (backW / 2 + (cameraOffset * (backW - SCREEN_WIDTH)) / 2) / backW;
 
     const baseOffsetL = (backW / 2 + (this.currentCameraOffset * (backW - SCREEN_WIDTH)) / 2) / backW;
     const baseOffsetR = 1 - (backW / 2 + (this.currentCameraOffset * (backW - SCREEN_WIDTH)) / 2) / backW;
 
-    // TODO: кстати, почему тут 0.7? Будто бы можно смело увеличивать до 1
     const smoothingFactor = 1;
 
     this.targetWeights.up = mouseY < centerY ? (1 - mouseY / centerY) * smoothingFactor : 0;
@@ -126,10 +143,10 @@ export class ParallaxBack extends Container {
   }
 
   public get width(): number {
-    return this.backWidth; // this.spine.width;
+    return this.backWidth;
   }
 
   public get height(): number {
-    return this.backHeight; // this.spine.height;
+    return this.backHeight;
   }
 }

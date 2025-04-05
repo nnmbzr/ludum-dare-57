@@ -39,8 +39,8 @@ export class CameraHorizontalMove {
     this.cameraMoveTweener = gsap.to(this.gameContainer, {
       duration: 0.75,
       x: this.currentPosition * this.screenAdditive,
-      // ease: 'power1.out',
-      ease: 'sine.inOut',
+      ease: 'power1.out',
+      // ease: 'sine.inOut',
       onComplete: () => {
         this.cameraMoveTweener = null;
       },
