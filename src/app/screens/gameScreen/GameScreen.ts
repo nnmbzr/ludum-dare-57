@@ -7,9 +7,11 @@ import { SettingsPopup } from '../../popups/SettingsPopup';
 
 import { AppScreen } from '../../../engine/navigation/navigation';
 import gsap from 'gsap';
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../main';
+import { SCREEN_HEIGHT, SCREEN_WIDTH, SHOW_MENU } from '../../../main';
 import { ParallaxBack } from './ParallaxBack';
 import { CameraHorizontalMove } from './CameraHorizontalMove';
+import { Inventory } from './Inventory';
+import { ItemsDragging } from './ItemsDragging';
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -20,11 +22,16 @@ export class GameScreen extends Container implements AppScreen {
   private settingsButton: FancyButton;
 
   private paused = false;
-  private blockScreenMove = true;
+  private blockScreenMove = false;
 
   private parallaxBack: ParallaxBack;
 
   private cameraHorizontalMove: CameraHorizontalMove;
+  private inventory: Inventory;
+  private itemsDragging: ItemsDragging;
+
+  private currentMouseX: number = 0;
+  private currentMouseY: number = 0;
 
   constructor() {
     super();
@@ -66,9 +73,76 @@ export class GameScreen extends Container implements AppScreen {
     this.cameraHorizontalMove = new CameraHorizontalMove(this.mainContainer, this.parallaxBack.width);
 
     this.onglobalmousemove = this.onMouseMove.bind(this);
+    this.on('mousedown', this.onMouseDown.bind(this));
+    this.on('mouseup', this.onMouseUp.bind(this));
     this.eventMode = 'static';
 
-    this.playInitAnimation();
+    this.inventory = new Inventory(this.inventoryItemCallback.bind(this));
+    this.addChild(this.inventory);
+
+    this.itemsDragging = new ItemsDragging(this.draggingDropCallback.bind(this));
+    this.addChild(this.itemsDragging);
+
+    if (SHOW_MENU) {
+      this.playInitAnimation();
+    }
+
+    this.testFuillInventory();
+  }
+
+  private draggingDropCallback(
+    bounds: { x: number; y: number; width: number; height: number },
+    id: string,
+    itemType: 'inventory' | 'game',
+  ) {
+    // Код обработки "дропа" объекта
+    console.log(`Item ${id} dropped at:`, bounds, itemType);
+
+    // Тут мы должны обрабатывать пересечение одних объектов с другими
+    // но пока просто возвращаем отсутствие пересечения
+    // this.checkIntersections(bounds, id);
+
+    const result = false;
+
+    if (!result) {
+      // Возвращаем объекты на место
+      if (itemType === 'inventory') {
+        // Предмет был в инвентаре. Вернем его обратно.
+        this.inventory.cancelInteraction(id);
+      }
+    }
+  }
+
+  private startDragging(x: number, y: number, id: string, fromInventory: boolean): void {
+    const type = fromInventory ? 'inventory' : 'game';
+    this.itemsDragging.addItem(x, y, id, type);
+  }
+
+  private testFuillInventory() {
+    const objects: string[] = ['button', 'icon-pause', 'icon-settings', 'rounded-rectangle', 'white_flash'];
+
+    objects.forEach((object) => {
+      this.inventory.addItem(object);
+    });
+  }
+
+  private inventoryItemCallback = (item: string) => {
+    console.log('Кликаем по объекту в инвентаре', item);
+    this.startDragging(this.currentMouseX, this.currentMouseY, item, true);
+  };
+
+  private onMouseUp(e: FederatedPointerEvent) {
+    if (this.paused) return;
+
+    const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
+    this.itemsDragging.onUp(x, y);
+  }
+
+  private onMouseDown(e: FederatedPointerEvent) {
+    const { y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
+
+    // Грубо отсекаем клики по инвентарю
+    if (y < 110) return;
   }
 
   private playInitAnimation() {
@@ -96,7 +170,12 @@ export class GameScreen extends Container implements AppScreen {
 
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
+    this.currentMouseX = x;
+    this.currentMouseY = y;
+
     this.parallaxBack.onMouseMove(x, y);
+
+    this.itemsDragging.onMouseMove(x, y);
 
     if (this.blockScreenMove) return;
 
@@ -120,6 +199,8 @@ export class GameScreen extends Container implements AppScreen {
 
     const cameraOffset = this.cameraHorizontalMove.getCameraOffset();
     this.parallaxBack.update(delta, cameraOffset);
+
+    this.itemsDragging.update(delta);
   }
 
   /** Pause gameplay - automatically fired when a popup is presented */
@@ -141,7 +222,7 @@ export class GameScreen extends Container implements AppScreen {
   public async show(): Promise<void> {
     engine().audio.bgm.play('main/sounds/bgm-main.mp3', { volume: 0.5 });
 
-    const elementsToAnimate = [this.settingsButton];
+    const elementsToAnimate = [this.settingsButton, this.inventory];
 
     let finalPromise!: gsap.core.Tween;
     for (const element of elementsToAnimate) {
