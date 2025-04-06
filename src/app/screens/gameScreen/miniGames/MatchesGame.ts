@@ -2,6 +2,7 @@ import { AnimationState, Spine } from '@esotericsoftware/spine-pixi-v8';
 import { Container, Point } from 'pixi.js';
 
 const START_POSE: Point = new Point(0, -150); // Начальная позиция костяшки спички
+const BREAK_DELAY = 0.05; // Задержка перед сломом спички
 
 export class MatchesGame extends Container {
   private spine: Spine;
@@ -23,10 +24,18 @@ export class MatchesGame extends Container {
   private currentSpeed: number = 0;
 
   // Константы
-  private readonly MIN_SPEED = 200;
-  private readonly MAX_SPEED = 6000;
+  private readonly MIN_SPEED = 700;
+  private readonly MAX_SPEED = 4000;
   private readonly FOLLOW_SPEED = 10.5;
-  private readonly SUCCESS_TIME = 0.5;
+  private readonly SUCCESS_TIME = 0.32;
+
+  // Параметры тряски для имитации шершавой поверхности
+  private readonly SHAKE_AMPLITUDE_X = 30.5; // Амплитуда тряски по X
+  private readonly SHAKE_AMPLITUDE_Y = 20.5; // Амплитуда тряски по Y
+  private readonly SHAKE_FREQUENCY = 1; // Частота тряски
+  private shakeTimer: number = 0; // Таймер для эффекта тряски
+  private shakeOffsetX: number = 0; // Текущий офсет тряски по X
+  private shakeOffsetY: number = 0; // Текущий офсет тряски по Y
 
   // Счетчик успешного чиркания
   private successTimer: number = 0;
@@ -36,6 +45,8 @@ export class MatchesGame extends Container {
   private isInStrikingArea: boolean = false;
 
   private ready = false;
+  private matchMustBeBroken = false;
+  private breakTimer = BREAK_DELAY;
   private gameActive = false;
   private inCallBack: () => void;
 
@@ -74,6 +85,7 @@ export class MatchesGame extends Container {
           this.state.setAnimation(0, 'idle', true);
         } else if (entry.animation?.name === 'fail') {
           this.ready = true;
+          this.matchMustBeBroken = false;
           this.state.setAnimation(1, 'normal');
           this.dropBonePosition();
           console.log('Спичка сломалась. Попробуйте снова!');
@@ -95,6 +107,9 @@ export class MatchesGame extends Container {
     this.successTimer = 0;
     this.currentSpeed = 0;
     this.moveDistance = 0;
+    this.shakeTimer = 0;
+    this.shakeOffsetX = 0;
+    this.shakeOffsetY = 0;
 
     // Сохраняем текущие позиции
     this.prevX = x;
@@ -126,19 +141,24 @@ export class MatchesGame extends Container {
     if (!this.ready || !this.gameActive) return;
     this.mouseHold = false;
     this.currentSpeed = 0;
+    this.shakeOffsetX = 0;
+    this.shakeOffsetY = 0;
   }
 
   private endMatchesMove(success = false) {
-    this.mouseHold = false;
-    this.gameActive = false;
-    this.isInStrikingArea = false;
-
     // Запускаем соответствующую анимацию
     if (success) {
+      this.mouseHold = false;
+      this.gameActive = false;
+      this.isInStrikingArea = false;
+      this.shakeOffsetX = 0;
+      this.shakeOffsetY = 0;
+
       this.ready = false;
       this.state.setAnimation(1, 'win', false);
     } else {
-      this.ready = false;
+      this.matchMustBeBroken = true;
+      this.breakTimer = BREAK_DELAY;
       this.state.setAnimation(1, 'fail', false);
     }
   }
@@ -164,12 +184,73 @@ export class MatchesGame extends Container {
     }
   }
 
+  /**
+   * Обновляет эффект тряски для имитации шершавой поверхности
+   * @param dt Дельта времени
+   * @returns Объект с офсетами тряски по осям X и Y
+   */
+  private updateShakeEffect(dt: number): { x: number; y: number } {
+    // Обновляем таймер тряски
+    this.shakeTimer += dt;
+
+    // Если мы не в зоне чиркания или скорость не подходящая - нет тряски
+    if (this.successTimer === 0 || this.matchMustBeBroken) {
+      // Постепенно уменьшаем тряску, если она была
+      this.shakeOffsetX *= 0.1;
+      this.shakeOffsetY *= 0.1;
+      return { x: this.shakeOffsetX, y: this.shakeOffsetY };
+    }
+
+    // Создаем эффект тряски, зависящий от времени и скорости движения
+    // Используем разные частоты для X и Y для более реалистичного эффекта
+    const intensityFactor = Math.min((this.currentSpeed - this.MIN_SPEED) / 1000, 1);
+
+    // Чем ближе скорость к оптимальной, тем сильнее тряска
+    const optimalSpeed = (this.MIN_SPEED + this.MAX_SPEED) / 2;
+    const optimalFactor = 1 - Math.abs(this.currentSpeed - optimalSpeed) / (this.MAX_SPEED - this.MIN_SPEED);
+
+    // Шум Перлина был бы идеален, но используем комбинацию синусов для упрощения
+    this.shakeOffsetX =
+      Math.sin(this.shakeTimer * 15) *
+      Math.cos(this.shakeTimer * 7) *
+      this.SHAKE_AMPLITUDE_X *
+      intensityFactor *
+      optimalFactor;
+
+    this.shakeOffsetY =
+      Math.sin(this.shakeTimer * 10) *
+      Math.cos(this.shakeTimer * 12) *
+      this.SHAKE_AMPLITUDE_Y *
+      intensityFactor *
+      optimalFactor;
+
+    // Добавляем случайность для более естественного эффекта
+    if (Math.random() < this.SHAKE_FREQUENCY) {
+      this.shakeOffsetX += (Math.random() * 2 - 1) * this.SHAKE_AMPLITUDE_X * 0.5;
+      this.shakeOffsetY += (Math.random() * 2 - 1) * this.SHAKE_AMPLITUDE_Y * 0.5;
+    }
+
+    return { x: this.shakeOffsetX, y: this.shakeOffsetY };
+  }
+
   public update(dt: number) {
     // Обновляем Spine анимацию
     this.spine.update(dt);
 
     if (!this.ready && !this.gameActive) {
       return;
+    }
+
+    if (this.matchMustBeBroken) {
+      this.breakTimer -= dt;
+      if (this.breakTimer <= 0) {
+        this.mouseHold = false;
+        this.gameActive = false;
+        this.isInStrikingArea = false;
+        this.shakeOffsetX = 0;
+        this.shakeOffsetY = 0;
+        this.ready = false;
+      }
     }
 
     if (this.mouseHold) {
@@ -191,34 +272,28 @@ export class MatchesGame extends Container {
       const cursorOffsetX = this.prevX - this.onDownPos.x;
       const cursorOffsetY = -(this.prevY - this.onDownPos.y); // Инвертируем Y для правильной ориентации
 
+      const correctFactor = this.successTimer > 0 ? 0.8 : 1;
+
       // Устанавливаем целевую позицию как начальная позиция спички + смещение курсора
       this.targetPos.x = this.spineDownPos.x + cursorOffsetX;
       this.targetPos.y = this.spineDownPos.y + cursorOffsetY;
 
-      // Применяем небольшой случайный оффсет для реалистичности
-      /* const randomOffsetX = (Math.random() - 0.5) * 2;
-      const randomOffsetY = (Math.random() - 0.5) * 2;
-      this.targetPos.x += randomOffsetX;
-      this.targetPos.y += randomOffsetY; */
-
       // 3. Плавно перемещаем текущую позицию к целевой
-      this.currentPos.x += (this.targetPos.x - this.currentPos.x) * this.FOLLOW_SPEED * dt;
-      this.currentPos.y += (this.targetPos.y - this.currentPos.y) * this.FOLLOW_SPEED * dt;
+      this.currentPos.x += (this.targetPos.x - this.currentPos.x) * this.FOLLOW_SPEED * dt * correctFactor;
+      this.currentPos.y += (this.targetPos.y - this.currentPos.y) * this.FOLLOW_SPEED * dt * correctFactor;
 
-      // 4. Обновляем позицию кости
+      // 4. Обновляем эффект тряски для имитации шершавой поверхности
+      const shakeOffset = this.updateShakeEffect(dt);
+
+      // 5. Обновляем позицию кости с учетом тряски
       const bone = this.spine.skeleton.findBone('match_move');
       if (bone) {
-        bone.x = this.currentPos.x;
-        bone.y = this.currentPos.y;
+        bone.x = this.currentPos.x + shakeOffset.x;
+        bone.y = this.currentPos.y + shakeOffset.y;
       }
 
-      // 5. Проверяем скорость и нахождение в области
+      // 6. Проверяем скорость и нахождение в области
       this.checkIfInStrikingArea();
-
-      // Выводим информацию о скорости для отладки
-      if (this.currentSpeed > 0) {
-        console.log(`Скорость: ${this.currentSpeed.toFixed(0)} п/с, Мин: ${this.MIN_SPEED}, Макс: ${this.MAX_SPEED}`);
-      }
 
       // Проверка скорости (слишком медленно)
       if (this.currentSpeed < this.MIN_SPEED && this.isInStrikingArea && this.successTimer > 0) {
@@ -227,7 +302,7 @@ export class MatchesGame extends Container {
       }
 
       // Проверка скорости (слишком быстро)
-      if (this.currentSpeed > this.MAX_SPEED && this.isInStrikingArea) {
+      if (this.currentSpeed > this.MAX_SPEED && this.isInStrikingArea && !this.matchMustBeBroken) {
         console.log('Слишком быстро! Спичка сломалась.');
         this.endMatchesMove(false);
         return;
@@ -236,7 +311,9 @@ export class MatchesGame extends Container {
       // Если соблюдены все условия для успешного чиркания
       if (this.isInStrikingArea && this.currentSpeed >= this.MIN_SPEED && this.currentSpeed <= this.MAX_SPEED) {
         this.successTimer += dt;
-        console.log(`Время чиркания: ${this.successTimer.toFixed(2)}/${this.SUCCESS_TIME.toFixed(2)}`);
+        console.log(
+          `Время чиркания: ${this.successTimer.toFixed(2)}/${this.SUCCESS_TIME.toFixed(2)}; Скорость: ${this.currentSpeed.toFixed(2)}`,
+        );
 
         if (this.successTimer >= this.SUCCESS_TIME) {
           console.log('Достаточно чиркания! Спичка зажигается.');
