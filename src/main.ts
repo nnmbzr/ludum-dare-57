@@ -1,9 +1,14 @@
 import { setEngine } from './app/getEngine';
-import { GameScreen } from './app/screens/gameScreen/GameScreen';
+import { MainScreen } from './app/screens/mainScreen/MainScreen';
+// import { GameScreen } from './app/screens/gameScreen/GameScreen';
+// import { TestingScreen } from './app/screens/testing/TestingScreen';
 // import { LoadScreen } from './app/screens/LoadScreen';
 import { userSettings } from './app/utils/userSettings';
 import { CreationEngine } from './engine/engine';
 import { initDevtools } from '@pixi/devtools';
+import gsap from 'gsap';
+import PixiPlugin from 'gsap/PixiPlugin';
+import * as PIXI from 'pixi.js';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -21,6 +26,9 @@ import '@pixi/sound';
 // Create a new creation engine instance
 const engine = new CreationEngine();
 setEngine(engine);
+
+gsap.registerPlugin(PixiPlugin);
+PixiPlugin.registerPIXI(PIXI);
 
 (async () => {
   // Initialize the creation engine instance
@@ -47,5 +55,5 @@ setEngine(engine);
   // await engine.navigation.showScreen(LoadScreen);
 
   // Show the main screen once the load screen is dismissed
-  await engine.navigation.showScreen(GameScreen);
+  await engine.navigation.showScreen(MainScreen);
 })();

@@ -1,5 +1,5 @@
 import { FancyButton } from '@pixi/ui';
-import { Container, FederatedPointerEvent, Ticker } from 'pixi.js';
+import { Container, FederatedPointerEvent, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../getEngine';
 import { PausePopup } from '../../popups/PausePopup';
@@ -18,7 +18,9 @@ export class GameScreen extends Container implements AppScreen {
 
   public mainContainer: Container;
   private settingsButton: FancyButton;
+
   private paused = false;
+  private blockScreenMove = true;
 
   private parallaxBack: ParallaxBack;
 
@@ -65,12 +67,39 @@ export class GameScreen extends Container implements AppScreen {
 
     this.onglobalmousemove = this.onMouseMove.bind(this);
     this.eventMode = 'static';
+
+    this.playInitAnimation();
+  }
+
+  private playInitAnimation() {
+    const blackOver = new Sprite(Texture.WHITE);
+    blackOver.width = SCREEN_WIDTH;
+    blackOver.height = SCREEN_HEIGHT;
+    blackOver.anchor.set(0.5);
+    blackOver.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    blackOver.tint = 0x000000;
+    this.addChild(blackOver);
+
+    gsap.to(blackOver, {
+      duration: 3,
+      alpha: 0,
+      ease: 'power1.out',
+      onStart: () => {},
+      onComplete: () => {
+        blackOver.destroy();
+      },
+    });
   }
 
   private onMouseMove(e: FederatedPointerEvent) {
+    if (this.paused) return;
+
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
     this.parallaxBack.onMouseMove(x, y);
+
+    if (this.blockScreenMove) return;
+
     this.cameraHorizontalMove.onMouseMove(x);
 
     // console.log('camera offset', cameraOffset);
