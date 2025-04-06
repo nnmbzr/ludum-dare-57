@@ -13,10 +13,14 @@ import * as PIXI from 'pixi.js';
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
 
+// УСКОРЯЕМ РАЗРАБОТКУ!!!!!111
+export const SHOW_MENU = false;
+
 /**
  * Importing these modules will automatically register there plugins with the engine.
  */
 import '@pixi/sound';
+import { GameScreen } from './app/screens/gameScreen/GameScreen';
 // import { setupVirtualInteraction } from './engine/interaction/VirtualInteraction';
 // import "@esotericsoftware/spine-pixi-v8";
 
@@ -51,9 +55,12 @@ PixiPlugin.registerPIXI(PIXI);
   initDevtools({ stage: engine.stage, renderer: engine.renderer });
 
   // Show the load screen
-  // Нужно будет не забыть раскоментировать
+  // TODO: Нужно будет не забыть раскоментировать
   // await engine.navigation.showScreen(LoadScreen);
 
-  // Show the main screen once the load screen is dismissed
-  await engine.navigation.showScreen(MainScreen);
+  if (SHOW_MENU) {
+    await engine.navigation.showScreen(MainScreen);
+  } else {
+    await engine.navigation.showScreen(GameScreen);
+  }
 })();
