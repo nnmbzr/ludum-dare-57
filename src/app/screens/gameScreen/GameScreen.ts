@@ -84,6 +84,7 @@ export class GameScreen extends Container implements AppScreen {
     this.on('mousemove', this.onMove.bind(this));
     this.on('mousedown', this.onDown.bind(this));
     this.on('mouseup', this.onUp.bind(this));
+    this.on('mouseupoutside', this.onUp.bind(this));
     this.eventMode = 'static';
 
     this.inventory = new Inventory(this.inventoryItemCallback.bind(this));
@@ -194,7 +195,7 @@ export class GameScreen extends Container implements AppScreen {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
     if (this.minigameStarted) {
-      this.matchesGame.onUp(x, y);
+      this.matchesGame.onUp();
     }
 
     if (this.paused || this.minigameStarted) return;
