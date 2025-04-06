@@ -13,7 +13,7 @@ import gsap from 'gsap';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../main';
 import { ParallaxOwl } from './ParallaxOwl';
 import { ParallaxBack } from '../gameScreen/ParallaxBack';
-import { ParallaxStartScreen } from './ParallaxStartScreen';
+import { ParallaxStartScreen } from '../mainScreen/ParallaxStartScreen';
 // import { ParallaxProgrammBack } from './ParallaxProgrammBack';
 
 /** The screen that holds the app */

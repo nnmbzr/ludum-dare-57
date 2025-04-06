@@ -144,4 +144,12 @@ export class ParallaxStartScreen extends Container {
       this.targetWeights.startscreen_lamp_right = 1;
     }
   }
+
+  public playOutAnimation() {
+    this.state.setAnimation(0, 'startscreen_out', false);
+  }
+
+  public get readyToGo(): boolean {
+    return this.state.tracks[0]?.animation?.name === 'startscreen_idle';
+  }
 }
