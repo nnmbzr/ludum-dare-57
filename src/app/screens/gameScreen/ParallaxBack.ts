@@ -45,7 +45,7 @@ export class ParallaxBack extends Container {
     this.addChild(this.spine);
   }
 
-  public onMouseMove(mouseX: number, mouseY: number) {
+  public onMove(mouseX: number, mouseY: number) {
     // Проверяем, изменилась ли позиция мыши
     if (this.lastMouseX !== mouseX || this.lastMouseY !== mouseY) {
       this.lastMouseX = mouseX;

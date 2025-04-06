@@ -44,6 +44,13 @@ PixiPlugin.registerPIXI(PIXI);
       letterbox: true, // Включаем режим letterbox
       letterboxColor: 0x000000, // Цвет заглушек по бокам (совпадает с фоном)
     },
+    eventMode: 'passive',
+    eventFeatures: {
+      move: true,
+      globalMove: false,
+      click: true,
+      wheel: false,
+    },
   });
 
   // TODO: временно отключаем, так как не работает корректно

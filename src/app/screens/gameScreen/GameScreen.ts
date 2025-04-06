@@ -12,6 +12,7 @@ import { ParallaxBack } from './ParallaxBack';
 import { CameraHorizontalMove } from './CameraHorizontalMove';
 import { Inventory } from './Inventory';
 import { ItemsDragging } from './ItemsDragging';
+import { MatchesGame } from './miniGames/MatchesGame';
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -19,10 +20,15 @@ export class GameScreen extends Container implements AppScreen {
   public static assetBundles = ['main'];
 
   public mainContainer: Container;
+  public inventoryContainer: Container;
+  public minigameContainer: Container;
+  public overlayContainer: Container;
+
   private settingsButton: FancyButton;
 
   private paused = false;
   private blockScreenMove = false;
+  private minigameStarted = false;
 
   private parallaxBack: ParallaxBack;
 
@@ -33,11 +39,16 @@ export class GameScreen extends Container implements AppScreen {
   private currentMouseX: number = 0;
   private currentMouseY: number = 0;
 
+  private matchesGame: MatchesGame;
+
   constructor() {
     super();
 
     this.mainContainer = new Container();
-    this.addChild(this.mainContainer);
+    this.inventoryContainer = new Container();
+    this.minigameContainer = new Container();
+    this.minigameContainer.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    this.overlayContainer = new Container();
 
     const buttonAnimations = {
       hover: {
@@ -61,33 +72,61 @@ export class GameScreen extends Container implements AppScreen {
     });
     this.settingsButton.onPress.connect(() => engine().navigation.presentPopup(SettingsPopup));
     this.settingsButton.position.set(SCREEN_WIDTH - 30, 30);
-    this.addChild(this.settingsButton);
 
     this.parallaxBack = new ParallaxBack('bg_test');
     this.parallaxBack.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     // TODO: временный x2 скейл! УБРАТЬ!
     this.parallaxBack.scale.set(0.5);
-    this.mainContainer.addChild(this.parallaxBack);
 
     // TODO: временный x2 скейл! УБРАТЬ!
     this.cameraHorizontalMove = new CameraHorizontalMove(this.mainContainer, this.parallaxBack.width);
 
-    this.onglobalmousemove = this.onMouseMove.bind(this);
-    this.on('mousedown', this.onMouseDown.bind(this));
-    this.on('mouseup', this.onMouseUp.bind(this));
+    this.on('mousemove', this.onMove.bind(this));
+    this.on('mousedown', this.onDown.bind(this));
+    this.on('mouseup', this.onUp.bind(this));
     this.eventMode = 'static';
 
     this.inventory = new Inventory(this.inventoryItemCallback.bind(this));
-    this.addChild(this.inventory);
 
     this.itemsDragging = new ItemsDragging(this.draggingDropCallback.bind(this));
-    this.addChild(this.itemsDragging);
 
     if (SHOW_MENU) {
       this.playInitAnimation();
     }
 
+    // dude
+    // idle
+    // idle_fire (когда костёр зажжён)
+    // out
+    // out_idle
+
     this.testFuillInventory();
+
+    /// /////////// TEST MINIGAME ////////////////
+    // TODO: тестово выпилилить
+    // как будто бы игрок кликнул по костру спичками.
+    this.minigameStarted = true;
+    this.matchesGame = new MatchesGame(() => {
+      console.log('matches game start!');
+    });
+    /// /////////////////////////////////////////
+
+    /// /////////// DISPLAY ORDER //////////////
+
+    // TODO: ТЕСТОВО! ВЫПИЛИТЬ!
+    this.minigameContainer.addChild(this.matchesGame);
+    /// /
+
+    this.mainContainer.addChild(this.parallaxBack);
+    this.inventoryContainer.addChild(this.inventory);
+
+    this.addChild(this.mainContainer);
+    this.addChild(this.inventoryContainer);
+    this.addChild(this.itemsDragging);
+
+    this.addChild(this.minigameContainer);
+    this.addChild(this.settingsButton);
+    this.addChild(this.overlayContainer);
   }
 
   private draggingDropCallback(
@@ -96,7 +135,7 @@ export class GameScreen extends Container implements AppScreen {
     itemType: 'inventory' | 'game',
   ) {
     // Код обработки "дропа" объекта
-    console.log(`Item ${id} dropped at:`, bounds, itemType);
+    // console.log(`Item ${id} dropped at:`, bounds, itemType);
 
     // Тут мы должны обрабатывать пересечение одних объектов с другими
     // но пока просто возвращаем отсутствие пересечения
@@ -127,23 +166,9 @@ export class GameScreen extends Container implements AppScreen {
   }
 
   private inventoryItemCallback = (item: string) => {
-    console.log('Кликаем по объекту в инвентаре', item);
+    // console.log('Кликаем по объекту в инвентаре', item);
     this.startDragging(this.currentMouseX, this.currentMouseY, item, true);
   };
-
-  private onMouseUp(e: FederatedPointerEvent) {
-    if (this.paused) return;
-
-    const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
-    this.itemsDragging.onUp(x, y);
-  }
-
-  private onMouseDown(e: FederatedPointerEvent) {
-    const { y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
-
-    // Грубо отсекаем клики по инвентарю
-    if (y < 110) return;
-  }
 
   private playInitAnimation() {
     const blackOver = new Sprite(Texture.WHITE);
@@ -152,7 +177,7 @@ export class GameScreen extends Container implements AppScreen {
     blackOver.anchor.set(0.5);
     blackOver.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     blackOver.tint = 0x000000;
-    this.addChild(blackOver);
+    this.overlayContainer.addChild(blackOver);
 
     gsap.to(blackOver, {
       duration: 3,
@@ -165,26 +190,50 @@ export class GameScreen extends Container implements AppScreen {
     });
   }
 
-  private onMouseMove(e: FederatedPointerEvent) {
-    if (this.paused) return;
-
+  private onUp(e: FederatedPointerEvent) {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
+
+    if (this.minigameStarted) {
+      this.matchesGame.onUp(x, y);
+    }
+
+    if (this.paused || this.minigameStarted) return;
+
+    this.itemsDragging.onUp(x, y);
+  }
+
+  private onDown(e: FederatedPointerEvent) {
+    const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
+
+    if (this.minigameStarted) {
+      this.matchesGame.onDown(x, y);
+    }
+
+    if (this.paused || this.minigameStarted) return;
+
+    // Грубо отсекаем клики по инвентарю
+    if (y < 110) return;
+  }
+
+  private onMove(e: FederatedPointerEvent) {
+    const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
+
+    if (this.minigameStarted) {
+      this.matchesGame.onMove(x, y);
+    }
+
+    if (this.paused || this.minigameStarted) return;
 
     this.currentMouseX = x;
     this.currentMouseY = y;
 
-    this.parallaxBack.onMouseMove(x, y);
+    this.parallaxBack.onMove(x, y);
 
-    this.itemsDragging.onMouseMove(x, y);
+    this.itemsDragging.onMove(x, y);
 
     if (this.blockScreenMove) return;
 
-    this.cameraHorizontalMove.onMouseMove(x);
-
-    // console.log('camera offset', cameraOffset);
-
-    // console.log('pure width', pureWidth);
-    // console.log('base offset', baseOffset);
+    this.cameraHorizontalMove.onMove(x);
   }
 
   /** Prepare the screen just before showing */
@@ -193,9 +242,14 @@ export class GameScreen extends Container implements AppScreen {
   /** Update the screen */
 
   public update(_time: Ticker) {
-    if (this.paused) return;
-
     const delta = _time.elapsedMS / 1000;
+
+    if (this.minigameStarted) {
+      // TODO: нужно будет как-то по-другому обновлять мини-игры
+      this.matchesGame.update(delta);
+    }
+
+    if (this.paused || this.minigameStarted) return;
 
     const cameraOffset = this.cameraHorizontalMove.getCameraOffset();
     this.parallaxBack.update(delta, cameraOffset);

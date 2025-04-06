@@ -131,7 +131,7 @@ export class TestingScreen extends Container implements AppScreen {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
     this.parallaxOwl.onMouseMove(x, y);
-    this.parallaxBack.onMouseMove(x, y);
+    this.parallaxBack.onMove(x, y);
     this.mainScreenSpine.onMouseMove(x);
     // this.parallaxBackground.onMouseMove(x, y);
   }

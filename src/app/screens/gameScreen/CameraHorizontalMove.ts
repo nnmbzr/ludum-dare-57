@@ -3,8 +3,8 @@ import { SCREEN_WIDTH } from '../../../main';
 import gsap from 'gsap';
 
 export class CameraHorizontalMove {
-  readonly minLeft: number = SCREEN_WIDTH * 0.1;
-  readonly maxRight: number = SCREEN_WIDTH * 0.9;
+  readonly minLeft: number = SCREEN_WIDTH * 0.05;
+  readonly maxRight: number = SCREEN_WIDTH * 0.95;
 
   private currentPosition: number = 0;
   private gameContainer: Container;
@@ -17,7 +17,7 @@ export class CameraHorizontalMove {
     this.screenAdditive = (screenMaxWidth - SCREEN_WIDTH) / 2;
   }
 
-  public onMouseMove(mouseX: number): void {
+  public onMove(mouseX: number): void {
     if (this.cameraMoveTweener) return;
 
     if (mouseX <= this.minLeft && this.currentPosition < 1) {
