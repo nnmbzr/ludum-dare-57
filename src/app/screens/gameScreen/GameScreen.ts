@@ -1,5 +1,5 @@
 import { FancyButton } from '@pixi/ui';
-import { Container, FederatedPointerEvent, Sprite, Texture, Ticker } from 'pixi.js';
+import { Container, FederatedPointerEvent, Rectangle, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../getEngine';
 import { PausePopup } from '../../popups/PausePopup';
@@ -14,6 +14,8 @@ import { Inventory } from './Inventory';
 import { ItemsDragging } from './ItemsDragging';
 import { MatchesGame } from './miniGames/MatchesGame';
 import { PhotoPopup } from '../../popups/PhotoPopup';
+import { InteractionManager } from './interaction/InteractionManager';
+import { SpriteInteractiveObject } from './interaction/SpriteInteractiveObject';
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -41,6 +43,8 @@ export class GameScreen extends Container implements AppScreen {
   private currentMouseY: number = 0;
 
   private currentMinigame: MatchesGame | null = null;
+
+  private interactionManager: InteractionManager;
 
   constructor() {
     super();
@@ -102,6 +106,8 @@ export class GameScreen extends Container implements AppScreen {
 
     this.testFuillInventory();
 
+    /// /////////// DISPLAY ORDER //////////////
+
     this.mainContainer.addChild(this.parallaxBack);
     this.inventoryContainer.addChild(this.inventory);
 
@@ -113,24 +119,38 @@ export class GameScreen extends Container implements AppScreen {
     this.addChild(this.settingsButton);
     this.addChild(this.overlayContainer);
 
-    /* const fire = Sprite.from('icon-settings');
-    fire.anchor.set(0.5);
-    this.parallaxBack.spine.addSlotObject('fire', fire); */
+    this.interactionManager = new InteractionManager();
+    this.setupLevelInteraction();
 
     // TODO: почему-то сразу не срабатывает
     // и нужна небольшая задержка
     setTimeout(() => {
-      this.startMinigame();
+      // this.startMinigame();
     }, 100);
+  }
+
+  private setupLevelInteraction() {
+    const fire = Sprite.from('campfire');
+    fire.anchor.set(0.5);
+
+    const fireInteractive = new SpriteInteractiveObject('campfire', fire);
+    this.parallaxBack.spine.addSlotObject('fire', fireInteractive.displayObject);
+
+    fireInteractive.acceptItem('icon-settings', 'light_fire');
+
+    fireInteractive.setClickHandler(() => {
+      console.log('Clicked on campfire!');
+      // Здесь можно добавить анимацию или звук
+    });
+
+    this.interactionManager.register(fireInteractive);
   }
 
   private startMinigame() {
     /// /////////// TEST MINIGAME ////////////////
 
     this.currentMinigame = new MatchesGame(
-      () => {
-        this.resume();
-      },
+      () => {},
       () => {
         this.minigameStarted = false;
         this.inventoryContainer.y = -300;
@@ -148,6 +168,7 @@ export class GameScreen extends Container implements AppScreen {
                 this.currentMinigame.destroy({ children: true });
                 this.currentMinigame = null;
               }
+              this.resume();
             };
 
             onComplete();
@@ -156,8 +177,6 @@ export class GameScreen extends Container implements AppScreen {
       },
     );
 
-    engine().navigation.presentPopup(PhotoPopup, this.currentMinigame.getPhoto(), this.currentMinigame);
-
     // TODO: тестово выпилилить
     // как будто бы игрок кликнул по костру спичками.
     // и нужно сразу скрывать интерфейс
@@ -165,34 +184,44 @@ export class GameScreen extends Container implements AppScreen {
     this.inventoryContainer.visible = false;
     /// /////////////////////////////////////////
 
-    /// /////////// DISPLAY ORDER //////////////
-
-    // TODO: ТЕСТОВО! ВЫПИЛИТЬ!
-    // this.minigameContainer.addChild(this.matchesGame);
-    /// /
+    engine().navigation.presentPopup(PhotoPopup, this.currentMinigame.getPhoto(), this.currentMinigame);
   }
 
-  private draggingDropCallback(
-    bounds: { x: number; y: number; width: number; height: number },
-    id: string,
-    itemType: 'inventory' | 'game',
-  ) {
+  private draggingDropCallback(rect: Rectangle, id: string, itemType: 'inventory' | 'game') {
     // Код обработки "дропа" объекта
-    console.log(`Item ${id} dropped at:`, bounds, itemType);
+    // console.log(`Item ${id} dropped at:`, rect, itemType);
 
     // Тут мы должны обрабатывать пересечение одних объектов с другими
     // но пока просто возвращаем отсутствие пересечения
     // this.checkIntersections(bounds, id);
 
-    const result = false;
+    const result = this.interactionManager.checkInteraction(id, rect);
 
-    if (!result) {
-      // Возвращаем объекты на место
-      if (itemType === 'inventory') {
-        // Предмет был в инвентаре. Вернем его обратно.
-        this.inventory.cancelInteraction(id);
+    if (result.success) {
+      // Обрабатываем успешное взаимодействие
+      if (result.actionType === 'light_fire') {
+        // Зажигаем костер
+        this.startMinigame();
+
+        setTimeout(() => {
+          // engine().navigation.dismissPopup();
+        }, 1000);
       }
+
+      // Удаляем предмет из инвентаря, если он был потреблен
+      if (result.consumeItem && itemType === 'inventory') {
+        this.inventory.removeItem(id);
+      }
+
+      return true;
     }
+
+    if (itemType === 'inventory') {
+      // Предмет был в инвентаре. Вернем его обратно.
+      this.inventory.cancelInteraction(id);
+    }
+
+    return false;
   }
 
   private startDragging(x: number, y: number, id: string, fromInventory: boolean): void {
@@ -254,11 +283,12 @@ export class GameScreen extends Container implements AppScreen {
 
     if (this.paused || this.minigameStarted) return;
 
-    if (this.minigameStarted && this.currentMinigame) {
-      this.currentMinigame.onMove(x, y);
+    const clickedObjectId = this.interactionManager.handleClick(x, y);
+    if (clickedObjectId) {
+      // TODO: обработка клика по интерактивному объекту
+      // по идее клик и так переопределяется в setClickHandler
+      // console.log(`Clicked on interactive object: ${clickedObjectId}`);
     }
-
-    if (this.paused || this.minigameStarted) return;
 
     this.currentMouseX = x;
     this.currentMouseY = y;
@@ -307,6 +337,8 @@ export class GameScreen extends Container implements AppScreen {
     }
 
     if (this.paused || this.minigameStarted) return;
+
+    this.interactionManager.update(delta);
 
     const cameraOffset = this.cameraHorizontalMove.getCameraOffset();
     this.parallaxBack.update(delta, cameraOffset);
