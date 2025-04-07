@@ -11,8 +11,6 @@ export class MatchTrail extends Container {
   private points: Point[] = [];
   private rope: MeshRope;
 
-  private baseWidth: number; // Базовая ширина текстуры трейла
-
   private readonly historySize: number;
   private readonly ropeSize: number;
 
@@ -23,7 +21,6 @@ export class MatchTrail extends Container {
 
     this.historySize = historySize;
     this.ropeSize = ropeSize;
-    this.baseWidth = trailTexture.width;
 
     // Инициализация массивов истории
     for (let i = 0; i < this.historySize; i++) {
