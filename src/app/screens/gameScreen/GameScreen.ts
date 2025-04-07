@@ -73,10 +73,8 @@ export class GameScreen extends Container implements AppScreen {
     this.settingsButton.onPress.connect(() => engine().navigation.presentPopup(SettingsPopup));
     this.settingsButton.position.set(SCREEN_WIDTH - 30, 30);
 
-    this.parallaxBack = new ParallaxBack('bg_test');
+    this.parallaxBack = new ParallaxBack('background');
     this.parallaxBack.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-    // TODO: временный x2 скейл! УБРАТЬ!
-    this.parallaxBack.scale.set(0.5);
 
     // TODO: временный x2 скейл! УБРАТЬ!
     this.cameraHorizontalMove = new CameraHorizontalMove(this.mainContainer, this.parallaxBack.width);
