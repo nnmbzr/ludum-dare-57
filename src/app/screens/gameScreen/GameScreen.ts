@@ -132,7 +132,7 @@ export class GameScreen extends Container implements AppScreen {
     this.setupLevelInteraction();
 
     setTimeout(() => {
-      this.startDudeMinigame();
+      this.startCarGame();
     }, 200);
   }
 
@@ -215,7 +215,41 @@ export class GameScreen extends Container implements AppScreen {
     this.interactionManager.register(dogInteractive);
   }
 
-  private startDudeMinigame() {
+  private startCarGame() {
+    /// /////////// TEST MINIGAME ////////////////
+
+    this.currentMinigame = new CarGame(
+      () => {},
+      () => {
+        this.minigameStarted = false;
+        this.inventoryContainer.y = -300;
+        gsap.to(this.inventoryContainer, {
+          duration: 0.3,
+          y: 0,
+          ease: 'power1.out',
+          onStart: () => {
+            this.inventoryContainer.visible = true;
+            const onComplete = async () => {
+              await engine().navigation.dismissPopup();
+              // TODO: ВАЖНО! Нужно удалять только на следующий тик,
+              // так как событие может придти асинхронно
+              if (this.currentMinigame) {
+                this.currentMinigame.destroy({ children: true });
+                this.currentMinigame = null;
+              }
+              this.resume();
+            };
+
+            onComplete();
+          },
+        });
+      },
+    );
+
+    this.playMinigame();
+  }
+
+  /* private startDudeMinigame() {
     this.currentMinigame = new DudeMushroom(
       () => {}, // Коллбек при инициализации
       () => {
@@ -244,7 +278,7 @@ export class GameScreen extends Container implements AppScreen {
     );
 
     this.playMinigame();
-  }
+  } */
 
   /* private startBackpackMinigame() {
     this.currentMinigame = new BackpackGame(

@@ -21,7 +21,9 @@ export class CarGame extends Container {
     this.endGameCallBack = endGameCallBack;
 
     // Инициализация Spine
-    this.spine = Spine.from({ skeleton: 'bagpack.json', atlas: 'bagpack.atlas' });
+    this.spine = Spine.from({ skeleton: 'car.json', atlas: 'car.atlas' });
+    this.spine.scale.set(0.5);
+    this.spine.y = 10;
     this.state = this.spine.state;
 
     // Устанавливаем начальные анимации
@@ -41,15 +43,22 @@ export class CarGame extends Container {
           this.inCallBack();
           this.ready = true;
           this.state.setAnimation(0, 'idle', true);
+        } else if (entry.animation?.name === 'open') {
+          // Анимация завершения игры
+          /* console.log('Игра завершена!');
+          this.endGameCallBack();
+          this.endGame = true; */
 
           setTimeout(() => {
-            this.state.setAnimation(1, 'jaw');
-          }, 1500);
+            this.state.setAnimation(0, 'out', false);
+            setTimeout(() => {
+              this.endGameCallBack();
+              // this.endGame = true;
+            }, 200);
+          }, 300);
         } else if (entry.animation?.name === 'out') {
           // Анимация завершения игры
           console.log('Игра завершена!');
-          this.endGameCallBack();
-          this.endGame = true;
         }
       },
     });
@@ -58,6 +67,7 @@ export class CarGame extends Container {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public onDown(_x: number, _y: number) {
     if (!this.ready || this.endGame) return;
+    this.finishGame();
   }
 
   public onUp() {
@@ -69,11 +79,11 @@ export class CarGame extends Container {
     if (!this.ready || this.endGame) return;
   }
 
-  /* private finishGame() {
+  private finishGame() {
     // Завершаем игру
     this.ready = false;
-    this.state.setAnimation(0, 'out', false);
-  } */
+    this.state.setAnimation(0, 'open', false);
+  }
 
   public update(dt: number) {
     if (this.endGame) return;
