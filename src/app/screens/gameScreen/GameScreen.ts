@@ -13,6 +13,7 @@ import { CameraHorizontalMove } from './CameraHorizontalMove';
 import { Inventory } from './Inventory';
 import { ItemsDragging } from './ItemsDragging';
 import { MatchesGame } from './miniGames/MatchesGame';
+import { PhotoPopup } from '../../popups/PhotoPopup';
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -39,7 +40,7 @@ export class GameScreen extends Container implements AppScreen {
   private currentMouseX: number = 0;
   private currentMouseY: number = 0;
 
-  private matchesGame: MatchesGame | null = null;
+  private currentMinigame: MatchesGame | null = null;
 
   constructor() {
     super();
@@ -101,44 +102,6 @@ export class GameScreen extends Container implements AppScreen {
 
     this.testFuillInventory();
 
-    /// /////////// TEST MINIGAME ////////////////
-    // TODO: тестово выпилилить
-    // как будто бы игрок кликнул по костру спичками.
-    // и нужно сразу скрывать интерфейс
-    this.minigameStarted = true;
-    this.inventoryContainer.visible = false;
-    this.matchesGame = new MatchesGame(
-      () => {
-        console.log('matches game start!');
-      },
-      () => {
-        console.log('matches game end!');
-        this.minigameStarted = false;
-        this.inventoryContainer.y = -300;
-        gsap.to(this.inventoryContainer, {
-          duration: 0.3,
-          y: 0,
-          ease: 'power1.out',
-          onStart: () => {
-            this.inventoryContainer.visible = true;
-            // TODO: ВАЖНО! Нужно удалять только на следующий тик,
-            // так как событие может придти асинхронно
-            if (this.matchesGame) {
-              this.matchesGame.destroy({ children: true });
-              this.matchesGame = null;
-            }
-          },
-        });
-      },
-    );
-    /// /////////////////////////////////////////
-
-    /// /////////// DISPLAY ORDER //////////////
-
-    // TODO: ТЕСТОВО! ВЫПИЛИТЬ!
-    this.minigameContainer.addChild(this.matchesGame);
-    /// /
-
     this.mainContainer.addChild(this.parallaxBack);
     this.inventoryContainer.addChild(this.inventory);
 
@@ -149,6 +112,57 @@ export class GameScreen extends Container implements AppScreen {
     this.addChild(this.minigameContainer);
     this.addChild(this.settingsButton);
     this.addChild(this.overlayContainer);
+
+    // TODO: почему-то сразу не срабатывает
+    // и нужна небольшая задержка
+    setTimeout(() => {
+      this.startMinigame();
+    }, 100);
+  }
+
+  private startMinigame() {
+    /// /////////// TEST MINIGAME ////////////////
+
+    this.currentMinigame = new MatchesGame(
+      () => {
+        this.resume();
+      },
+      () => {
+        this.minigameStarted = false;
+        this.inventoryContainer.y = -300;
+        gsap.to(this.inventoryContainer, {
+          duration: 0.3,
+          y: 0,
+          ease: 'power1.out',
+          onStart: () => {
+            this.inventoryContainer.visible = true;
+            engine().navigation.dismissPopup();
+            // TODO: ВАЖНО! Нужно удалять только на следующий тик,
+            // так как событие может придти асинхронно
+            // if (this.minigamePopup) {
+            // TODO: как его грамотно удалять?!
+            /*  this.matchesGame.destroy({ children: true });
+          this.matchesGame = null; */
+            // }
+          },
+        });
+      },
+    );
+
+    engine().navigation.presentPopup(PhotoPopup, this.currentMinigame.getPhoto(), this.currentMinigame);
+
+    // TODO: тестово выпилилить
+    // как будто бы игрок кликнул по костру спичками.
+    // и нужно сразу скрывать интерфейс
+    this.minigameStarted = true;
+    this.inventoryContainer.visible = false;
+    /// /////////////////////////////////////////
+
+    /// /////////// DISPLAY ORDER //////////////
+
+    // TODO: ТЕСТОВО! ВЫПИЛИТЬ!
+    // this.minigameContainer.addChild(this.matchesGame);
+    /// /
   }
 
   private draggingDropCallback(
@@ -215,8 +229,8 @@ export class GameScreen extends Container implements AppScreen {
   private onUp(e: FederatedPointerEvent) {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
-    if (this.minigameStarted && this.matchesGame) {
-      this.matchesGame.onUp();
+    if (this.minigameStarted && this.currentMinigame) {
+      this.currentMinigame.onUp();
     }
 
     if (this.paused || this.minigameStarted) return;
@@ -227,21 +241,35 @@ export class GameScreen extends Container implements AppScreen {
   private onDown(e: FederatedPointerEvent) {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
-    if (this.minigameStarted && this.matchesGame) {
-      this.matchesGame.onDown(x, y);
+    if (this.minigameStarted && this.currentMinigame) {
+      this.currentMinigame.onDown(x, y);
     }
 
     if (this.paused || this.minigameStarted) return;
 
-    // Грубо отсекаем клики по инвентарю
-    if (y < 110) return;
+    if (this.minigameStarted && this.currentMinigame) {
+      this.currentMinigame.onMove(x, y);
+    }
+
+    if (this.paused || this.minigameStarted) return;
+
+    this.currentMouseX = x;
+    this.currentMouseY = y;
+
+    this.parallaxBack.onMove(x, y);
+
+    this.itemsDragging.onMove(x, y);
+
+    if (this.blockScreenMove) return;
+
+    this.cameraHorizontalMove.onMove(x);
   }
 
   private onMove(e: FederatedPointerEvent) {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
-    if (this.minigameStarted && this.matchesGame) {
-      this.matchesGame.onMove(x, y);
+    if (this.minigameStarted && this.currentMinigame) {
+      this.currentMinigame.onMove(x, y);
     }
 
     if (this.paused || this.minigameStarted) return;
@@ -266,10 +294,9 @@ export class GameScreen extends Container implements AppScreen {
   public update(_time: Ticker) {
     const delta = _time.elapsedMS / 1000;
 
-    if (this.minigameStarted && this.matchesGame) {
+    if (this.minigameStarted && this.currentMinigame) {
       // TODO: нужно будет как-то по-другому обновлять мини-игры
-      console.log(this.minigameStarted);
-      this.matchesGame.update(delta);
+      this.currentMinigame.update(delta);
     }
 
     if (this.paused || this.minigameStarted) return;

@@ -320,7 +320,7 @@ export class MatchesGame extends Container {
       // 5. Обновляем позицию кости с учетом тряски
       const bone = this.spine.skeleton.findBone('match_move');
       if (bone) {
-        bone.x = Math.min(Math.max(-380, this.currentPos.x + shakeOffset.x), 740);
+        bone.x = Math.min(Math.max(-380 - 250, this.currentPos.x + shakeOffset.x), 740);
         bone.y = Math.min(Math.max(-426, this.currentPos.y + shakeOffset.y), 300);
 
         const isTrailActive =
@@ -386,5 +386,9 @@ export class MatchesGame extends Container {
   private get matchPercent(): number {
     // Возвращаем процент успешного чиркания
     return this.successTimer / this.SUCCESS_TIME;
+  }
+
+  public getPhoto(): string {
+    return 'art_matches';
   }
 }
