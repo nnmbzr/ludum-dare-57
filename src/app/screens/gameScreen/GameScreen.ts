@@ -157,7 +157,7 @@ export class GameScreen extends Container implements AppScreen {
     itemType: 'inventory' | 'game',
   ) {
     // Код обработки "дропа" объекта
-    // console.log(`Item ${id} dropped at:`, bounds, itemType);
+    console.log(`Item ${id} dropped at:`, bounds, itemType);
 
     // Тут мы должны обрабатывать пересечение одних объектов с другими
     // но пока просто возвращаем отсутствие пересечения
