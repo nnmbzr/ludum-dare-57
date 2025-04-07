@@ -1,12 +1,8 @@
-import { Container, Sprite } from 'pixi.js';
+import { Container, Rectangle, Sprite } from 'pixi.js';
 import gsap from 'gsap';
 import { CELL_SIZE } from './Inventory';
 
-type DragCallback = (
-  bounds: { x: number; y: number; width: number; height: number },
-  id: string,
-  itemType: 'inventory' | 'game',
-) => void;
+type DragCallback = (bounds: Rectangle, id: string, itemType: 'inventory' | 'game') => void;
 
 const DRAG_SPEED = 8.5; // Скорость следования за мышью
 
@@ -120,15 +116,15 @@ export class ItemsDragging extends Container {
     }
 
     // Получить прямоугольник для проверки пересечений
-    const bounds = {
-      x: x - this.currentItem.width / 2,
-      y: y - this.currentItem.height / 2,
-      width: this.currentItem.width,
-      height: this.currentItem.height,
-    };
+    const rectangle = new Rectangle(
+      x - this.currentItem.width / 2,
+      y - this.currentItem.height / 2,
+      this.currentItem.width,
+      this.currentItem.height,
+    );
 
     // Вызвать колбэк с информацией об объекте
-    this.onDropCallback(bounds, this.currentItemId, this.currentItemType);
+    this.onDropCallback(rectangle, this.currentItemId, this.currentItemType);
 
     // Удалить объект после отпускания
     this.removeCurrentItem();

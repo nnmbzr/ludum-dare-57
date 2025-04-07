@@ -81,7 +81,6 @@ export class MatchesGame extends Container {
 
     this.state.setAnimation(0, 'in');
     this.state.setAnimation(1, 'normal');
-    this.state.setAnimation(2, 'fx_tail', true);
 
     this.matchTrail = new MatchTrail(Texture.from('trail'), 6, 30);
     this.spine.addSlotObject('matches', this.matchTrail);
