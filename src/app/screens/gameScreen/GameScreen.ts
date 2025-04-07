@@ -104,7 +104,9 @@ export class GameScreen extends Container implements AppScreen {
     /// /////////// TEST MINIGAME ////////////////
     // TODO: тестово выпилилить
     // как будто бы игрок кликнул по костру спичками.
+    // и нужно сразу скрывать интерфейс
     this.minigameStarted = true;
+    this.inventoryContainer.visible = false;
     this.matchesGame = new MatchesGame(
       () => {
         console.log('matches game start!');
@@ -112,10 +114,21 @@ export class GameScreen extends Container implements AppScreen {
       () => {
         console.log('matches game end!');
         this.minigameStarted = false;
-        if (this.matchesGame) {
-          this.matchesGame.destroy({ children: true });
-          this.matchesGame = null;
-        }
+        this.inventoryContainer.y = -300;
+        gsap.to(this.inventoryContainer, {
+          duration: 0.3,
+          y: 0,
+          ease: 'power1.out',
+          onStart: () => {
+            this.inventoryContainer.visible = true;
+            // TODO: ВАЖНО! Нужно удалять только на следующий тик,
+            // так как событие может придти асинхронно
+            if (this.matchesGame) {
+              this.matchesGame.destroy({ children: true });
+              this.matchesGame = null;
+            }
+          },
+        });
       },
     );
     /// /////////////////////////////////////////
@@ -255,6 +268,7 @@ export class GameScreen extends Container implements AppScreen {
 
     if (this.minigameStarted && this.matchesGame) {
       // TODO: нужно будет как-то по-другому обновлять мини-игры
+      console.log(this.minigameStarted);
       this.matchesGame.update(delta);
     }
 
