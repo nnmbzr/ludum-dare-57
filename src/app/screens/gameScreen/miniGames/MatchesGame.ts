@@ -4,6 +4,7 @@ import { MatchTrail } from './MatchTrail';
 
 const START_POSE: Point = new Point(0, -150); // Начальная позиция костяшки спички
 const BREAK_DELAY = 0.05; // Задержка перед сломом спички
+const MAX_FAILS = 1; // Максимальное количество попыток сломать спичку
 
 export class MatchesGame extends Container {
   private spine: Spine;
@@ -40,6 +41,8 @@ export class MatchesGame extends Container {
 
   // Счетчик успешного чиркания
   private successTimer: number = 0;
+
+  private currentFailCount: number = 0; // Счетчик неудач
 
   // Область для чиркания
   private strikingArea: Point[];
@@ -161,7 +164,7 @@ export class MatchesGame extends Container {
 
   private endMatchesMove(success = false) {
     // Запускаем соответствующую анимацию
-    if (success) {
+    if (success || this.currentFailCount >= MAX_FAILS) {
       this.mouseHold = false;
       this.gameActive = false;
       this.isInStrikingArea = false;
@@ -174,6 +177,7 @@ export class MatchesGame extends Container {
       this.matchMustBeBroken = true;
       this.breakTimer = BREAK_DELAY;
       this.state.setAnimation(1, 'fail', false);
+      this.currentFailCount++;
     }
 
     const bone = this.spine.skeleton.findBone('match_move');

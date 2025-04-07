@@ -5,6 +5,7 @@ import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../main';
 export class ParallaxBack extends Container {
   private readonly backWidth: number = 2880;
   private readonly backHeight: number = 1080;
+  private readonly interpolationFactor: number = 0.25;
 
   private currentCameraOffset: number = 0;
   private lastMouseX: number = 0;
@@ -18,7 +19,7 @@ export class ParallaxBack extends Container {
     left: 5,
   };
 
-  private spine: Spine;
+  public spine: Spine;
   private state: AnimationState;
   private currentWeights: { [key: string]: number } = {
     up: 0,
@@ -82,14 +83,10 @@ export class ParallaxBack extends Container {
       this.needRecalculate = false;
     }
 
-    // Интерполяционный фактор для плавности (меньше = плавнее)
-    // TODO: сделать меньше или разобраться между центром
-    const interpolationFactor = 0.1;
-
     // Интерполируем текущие веса к целевым для плавности
     Object.keys(this.currentWeights).forEach((direction) => {
       const targetWeight = this.targetWeights[direction as keyof typeof this.targetWeights];
-      this.currentWeights[direction] += (targetWeight - this.currentWeights[direction]) * interpolationFactor;
+      this.currentWeights[direction] += (targetWeight - this.currentWeights[direction]) * this.interpolationFactor;
     });
 
     const animationState = this.spine.state;
@@ -135,12 +132,16 @@ export class ParallaxBack extends Container {
 
     const smoothingFactor = 1;
 
-    this.targetWeights.up = mouseY < centerY ? (1 - mouseY / centerY) * smoothingFactor : 0;
-    this.targetWeights.down = mouseY > centerY ? ((mouseY - centerY) / maxDistanceH) * smoothingFactor : 0;
-    this.targetWeights.left =
-      mouseX < centerX ? (baseOffsetL + pureWidth * (1 - mouseX / centerX)) * smoothingFactor : 0;
-    this.targetWeights.right =
-      mouseX > centerX ? (baseOffsetR + pureWidth * ((mouseX - centerX) / maxDistanceW)) * smoothingFactor : 0;
+    this.targetWeights.up = Math.min(1, Math.max(0, (1 - mouseY / centerY) * smoothingFactor));
+    this.targetWeights.down = Math.min(1, Math.max(0, 1 + ((mouseY - centerY) / maxDistanceH) * smoothingFactor));
+    this.targetWeights.left = Math.min(
+      1,
+      Math.max(0, (baseOffsetL + pureWidth * (1 - mouseX / centerX)) * smoothingFactor),
+    );
+    this.targetWeights.right = Math.min(
+      1,
+      Math.max(0, (baseOffsetR + pureWidth * ((mouseX - centerX) / maxDistanceW)) * smoothingFactor),
+    );
   }
 
   public get width(): number {
