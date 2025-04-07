@@ -32,7 +32,7 @@ export class DudeController extends SpineObjectController {
 
     // Устанавливаем начальную анимацию
     this.state.setAnimation(0, DudeAnimation.IDLE, true);
-    this.spine.scale.set(0.5);
+    this.spine.scale.set(0.5 * 0.8);
   }
 
   /**

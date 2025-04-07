@@ -31,6 +31,8 @@ export class BoyController extends SpineObjectController {
 
     // Устанавливаем начальную анимацию
     this.state.setAnimation(0, BoyAnimation.IDLE, true);
+
+    this.spine.scale.set(0.8);
   }
 
   /**

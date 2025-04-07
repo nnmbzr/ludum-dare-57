@@ -22,6 +22,9 @@ import { BoyController } from './controllers/BoyController';
 import { DudeController } from './controllers/DudeController';
 import { GirlController } from './controllers/GirlController';
 import { DogController } from './controllers/DogController';
+import { BackpackGame } from './miniGames/BackpackGame';
+
+export type MiniGame = MatchesGame | BackpackGame | null;
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -48,7 +51,7 @@ export class GameScreen extends Container implements AppScreen {
   private currentMouseX: number = 0;
   private currentMouseY: number = 0;
 
-  private currentMinigame: MatchesGame | null = null;
+  private currentMinigame: MiniGame = null;
 
   private interactionManager: InteractionManager;
 
@@ -124,6 +127,10 @@ export class GameScreen extends Container implements AppScreen {
 
     this.interactionManager = new InteractionManager();
     this.setupLevelInteraction();
+
+    setTimeout(() => {
+      this.startBackpackMinigame();
+    }, 200);
   }
 
   private setupLevelInteraction() {
@@ -205,7 +212,38 @@ export class GameScreen extends Container implements AppScreen {
     this.interactionManager.register(dogInteractive);
   }
 
-  private startMinigame() {
+  private startBackpackMinigame() {
+    this.currentMinigame = new BackpackGame(
+      () => {}, // Коллбек при инициализации
+      () => {
+        this.minigameStarted = false;
+        this.inventoryContainer.y = -300;
+        gsap.to(this.inventoryContainer, {
+          duration: 0.3,
+          y: 0,
+          ease: 'power1.out',
+          onStart: () => {
+            this.inventoryContainer.visible = true;
+            const onComplete = async () => {
+              await engine().navigation.dismissPopup();
+              // Удаляем только на следующий тик
+              if (this.currentMinigame) {
+                this.currentMinigame.destroy({ children: true });
+                this.currentMinigame = null;
+              }
+              this.resume();
+            };
+
+            onComplete();
+          },
+        });
+      },
+    );
+
+    this.playMinigame();
+  }
+
+  private startMatchesGame() {
     /// /////////// TEST MINIGAME ////////////////
 
     this.currentMinigame = new MatchesGame(
@@ -236,9 +274,15 @@ export class GameScreen extends Container implements AppScreen {
       },
     );
 
-    // TODO: тестово выпилилить
-    // как будто бы игрок кликнул по костру спичками.
-    // и нужно сразу скрывать интерфейс
+    this.playMinigame();
+  }
+
+  private playMinigame() {
+    if (!this.currentMinigame) {
+      console.warn('Minigame is null');
+      return;
+    }
+
     this.minigameStarted = true;
     this.inventoryContainer.visible = false;
     /// /////////////////////////////////////////
@@ -262,7 +306,7 @@ export class GameScreen extends Container implements AppScreen {
       // Обрабатываем успешное взаимодействие
       if (result.actionType === 'light_fire') {
         // Зажигаем костер
-        this.startMinigame();
+        this.startMatchesGame();
       }
 
       // Удаляем предмет из инвентаря, если он был потреблен
