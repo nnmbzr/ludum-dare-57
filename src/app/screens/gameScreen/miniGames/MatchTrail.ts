@@ -3,7 +3,7 @@ import { Container, MeshRope, Point, Texture } from 'pixi.js';
 
 export class MatchTrail extends Container {
   private readonly minAlpha: number = 0.3;
-  private readonly minColor: number = 0x7a2204;
+  private readonly minColor: number = 0xac331e;
   private readonly maxColor: number = 0xffff00;
 
   private historyX: number[] = [];

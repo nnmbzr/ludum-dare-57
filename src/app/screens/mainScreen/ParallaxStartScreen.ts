@@ -34,6 +34,7 @@ export class ParallaxStartScreen extends Container {
 
     this.startScreenSpine = Spine.from({ skeleton: `${name}.json`, atlas: `${name}.atlas` });
     this.state = this.startScreenSpine.state;
+    this.state.timeScale = 0.5;
 
     this.setupAnimations();
 
