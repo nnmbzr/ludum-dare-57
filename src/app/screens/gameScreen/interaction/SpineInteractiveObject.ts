@@ -10,6 +10,8 @@ export class SpineInteractiveObject extends BaseInteractiveObject {
   private readonly slotName?: string;
   private readonly boneName?: string;
 
+  private readonly container: Container;
+
   constructor(
     id: string,
     spine: Spine,
@@ -23,6 +25,10 @@ export class SpineInteractiveObject extends BaseInteractiveObject {
     container.addChild(spine);
 
     super(id, container);
+
+    this.container = container;
+
+    this.container.hitArea = new Rectangle(-spine.width / 2, -spine.height / 2, spine.width, spine.height);
 
     this.spine = spine;
     this.slotName = options?.slotName;
