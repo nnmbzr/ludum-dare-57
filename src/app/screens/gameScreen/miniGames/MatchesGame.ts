@@ -4,7 +4,7 @@ import { MatchTrail } from './MatchTrail';
 
 const START_POSE: Point = new Point(0, -150); // Начальная позиция костяшки спички
 const BREAK_DELAY = 0.05; // Задержка перед сломом спички
-const MAX_FAILS = 1; // Максимальное количество попыток сломать спичку
+const MAX_FAILS = 6; // Максимальное количество попыток сломать спичку
 
 export class MatchesGame extends Container {
   private spine: Spine;
@@ -70,6 +70,7 @@ export class MatchesGame extends Container {
 
     this.spine = Spine.from({ skeleton: 'matches.json', atlas: 'matches.atlas' });
     this.state = this.spine.state;
+    this.state.timeScale = 0.5;
 
     const bone = this.spine.skeleton.findBone('match_move');
     if (bone) {
@@ -81,6 +82,7 @@ export class MatchesGame extends Container {
 
     this.state.setAnimation(0, 'in');
     this.state.setAnimation(1, 'normal');
+    this.state.setAnimation(2, 'heal6');
 
     this.matchTrail = new MatchTrail(Texture.from('trail'), 6, 30);
     this.spine.addSlotObject('matches', this.matchTrail);
@@ -99,6 +101,7 @@ export class MatchesGame extends Container {
           this.ready = true;
           this.matchMustBeBroken = false;
           this.state.setAnimation(1, 'normal');
+          this.state.setAnimation(2, `heal${MAX_FAILS - this.currentFailCount}`);
           this.dropBonePosition();
           console.log('Спичка сломалась. Попробуйте снова!');
         } else if (entry.animation?.name === 'win') {

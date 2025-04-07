@@ -40,6 +40,7 @@ export class ParallaxBack extends Container {
 
     this.spine = Spine.from({ skeleton: `${name}.json`, atlas: `${name}.atlas` });
     this.state = this.spine.state;
+    this.state.timeScale = 0.5;
 
     this.setupAnimations();
 
@@ -103,8 +104,6 @@ export class ParallaxBack extends Container {
   }
 
   private setupAnimations() {
-    // this.state.setAnimation(0, 'idle', true);
-
     Object.entries(this.directionTracks).forEach(([direction, trackIndex]) => {
       const track = this.state.setAnimation(trackIndex, direction, true);
       // TODO: но неплохо было бы разобраться, почему ADD не работает
@@ -142,6 +141,10 @@ export class ParallaxBack extends Container {
       1,
       Math.max(0, (baseOffsetR + pureWidth * ((mouseX - centerX) / maxDistanceW)) * smoothingFactor),
     );
+  }
+
+  public playIdle() {
+    this.state.setAnimation(0, 'idle', true);
   }
 
   public get width(): number {

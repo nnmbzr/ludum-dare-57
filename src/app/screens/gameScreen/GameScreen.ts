@@ -15,7 +15,13 @@ import { ItemsDragging } from './ItemsDragging';
 import { MatchesGame } from './miniGames/MatchesGame';
 import { PhotoPopup } from '../../popups/PhotoPopup';
 import { InteractionManager } from './interaction/InteractionManager';
-import { SpriteInteractiveObject } from './interaction/SpriteInteractiveObject';
+import { SpineInteractiveObject } from './interaction/SpineInteractiveObject';
+import { BonfireController } from './controllers/BonfireController';
+import { SpineObjectController } from './controllers/SpineObjectController';
+import { BoyController } from './controllers/BoyController';
+import { DudeController } from './controllers/DudeController';
+import { GirlController } from './controllers/GirlController';
+import { DogController } from './controllers/DogController';
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -45,6 +51,8 @@ export class GameScreen extends Container implements AppScreen {
   private currentMinigame: MatchesGame | null = null;
 
   private interactionManager: InteractionManager;
+
+  private spineObjectControllers: SpineObjectController[] = [];
 
   constructor() {
     super();
@@ -80,6 +88,7 @@ export class GameScreen extends Container implements AppScreen {
 
     this.parallaxBack = new ParallaxBack('background');
     this.parallaxBack.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    this.parallaxBack.playIdle();
 
     // TODO: временный x2 скейл! УБРАТЬ!
     this.cameraHorizontalMove = new CameraHorizontalMove(this.mainContainer, this.parallaxBack.width);
@@ -98,12 +107,6 @@ export class GameScreen extends Container implements AppScreen {
       this.playInitAnimation();
     }
 
-    // dude
-    // idle
-    // idle_fire (когда костёр зажжён)
-    // out
-    // out_idle
-
     this.testFuillInventory();
 
     /// /////////// DISPLAY ORDER //////////////
@@ -121,20 +124,14 @@ export class GameScreen extends Container implements AppScreen {
 
     this.interactionManager = new InteractionManager();
     this.setupLevelInteraction();
-
-    // TODO: почему-то сразу не срабатывает
-    // и нужна небольшая задержка
-    setTimeout(() => {
-      // this.startMinigame();
-    }, 100);
   }
 
   private setupLevelInteraction() {
-    const fire = Sprite.from('campfire');
+    /* const fire = Sprite.from('campfire');
     fire.anchor.set(0.5);
 
     const fireInteractive = new SpriteInteractiveObject('campfire', fire);
-    this.parallaxBack.spine.addSlotObject('fire', fireInteractive.displayObject);
+    this.parallaxBack.spine.addSlotObject('fireContainer', fireInteractive.displayObject);
 
     fireInteractive.acceptItem('icon-settings', 'light_fire');
 
@@ -143,7 +140,69 @@ export class GameScreen extends Container implements AppScreen {
       // Здесь можно добавить анимацию или звук
     });
 
-    this.interactionManager.register(fireInteractive);
+    this.interactionManager.register(fireInteractive); */
+    // fire_idle
+    // fire_on
+    // idle
+    /* const bonfire = Spine.from({ atlas: 'bonfire.atlas', skeleton: 'bonfire.json' });
+    bonfire.state.setAnimation(0, 'fire_idle');
+    this.parallaxBack.spine.addSlotObject('fireContainer', bonfire); */
+
+    /// ////// Костер ///////////
+
+    const bonfireInteractive = this.createAnimationObject(BonfireController, 'fireContainer');
+
+    bonfireInteractive.acceptItem('white_flash', 'light_fire');
+    bonfireInteractive.setClickHandler(async () => {
+      (this.getControllerByType(BoyController) as BoyController).setFireState(true);
+      (this.getControllerByType(DudeController) as DudeController).setFireState(true);
+      (this.getControllerByType(GirlController) as GirlController).setFireState(true);
+      await (this.getControllerByType(BonfireController) as BonfireController).lightFire();
+    });
+    this.interactionManager.register(bonfireInteractive);
+
+    /// /////// Мальчик //////////
+    const boyInteractive = this.createAnimationObject(BoyController, 'boyContainer');
+    boyInteractive.setClickHandler(async () => {
+      console.log('Кликнули по мальчику!');
+
+      // Зажигаем костер и ждем завершения анимации
+      await (this.getControllerByType(BoyController) as BoyController).giveGuitar();
+
+      console.log('Персонаж получил гитару!');
+      // ...
+    });
+    this.interactionManager.register(boyInteractive);
+
+    /// /////// Дружок хуев //////////
+    const dudeInteractive = this.createAnimationObject(DudeController, 'dudeContainer');
+    dudeInteractive.setClickHandler(async () => {
+      console.log('Кликнули по дружку!');
+      // Здесь можно добавить анимацию или звук
+
+      await (this.getControllerByType(DudeController) as DudeController).driveAway();
+    });
+    this.interactionManager.register(dudeInteractive);
+
+    /// /////// Еотка //////////
+    const girlInteractive = this.createAnimationObject(GirlController, 'girlContainer');
+    girlInteractive.setClickHandler(async () => {
+      console.log('Кликнули по зазнобе!');
+      // Здесь можно добавить анимацию или звук
+
+      await (this.getControllerByType(GirlController) as GirlController).giveStick();
+    });
+    this.interactionManager.register(girlInteractive);
+
+    /// /////// Пёсик //////////
+    const dogInteractive = this.createAnimationObject(DogController, 'dogContainer');
+    dogInteractive.setClickHandler(async () => {
+      console.log('Кликнули по зазнобе!');
+      // Здесь можно добавить анимацию или звук
+
+      await (this.getControllerByType(DogController) as DogController).giveBall();
+    });
+    this.interactionManager.register(dogInteractive);
   }
 
   private startMinigame() {
@@ -197,15 +256,13 @@ export class GameScreen extends Container implements AppScreen {
 
     const result = this.interactionManager.checkInteraction(id, rect);
 
+    console.log('draggingDropCallback', result);
+
     if (result.success) {
       // Обрабатываем успешное взаимодействие
       if (result.actionType === 'light_fire') {
         // Зажигаем костер
         this.startMinigame();
-
-        setTimeout(() => {
-          // engine().navigation.dismissPopup();
-        }, 1000);
       }
 
       // Удаляем предмет из инвентаря, если он был потреблен
@@ -343,6 +400,10 @@ export class GameScreen extends Container implements AppScreen {
     const cameraOffset = this.cameraHorizontalMove.getCameraOffset();
     this.parallaxBack.update(delta, cameraOffset);
 
+    this.spineObjectControllers.forEach((controller) => {
+      controller.update(delta);
+    });
+
     this.itemsDragging.update(delta);
   }
 
@@ -388,5 +449,46 @@ export class GameScreen extends Container implements AppScreen {
     if (!engine().navigation.currentPopup) {
       engine().navigation.presentPopup(PausePopup);
     }
+  }
+
+  /**
+   * Создает и регистрирует анимационный объект
+   * @param controllerClass Класс контроллера (например, BonfireController)
+   * @param slotName Имя слота, в который будет помещен объект
+   * @returns Интерактивный объект, готовый к добавлению в систему взаимодействия
+   */
+  public createAnimationObject<T extends SpineObjectController>(
+    controllerClass: new () => T,
+    slotName: string,
+  ): SpineInteractiveObject {
+    // Создаем контроллер
+    const controller = new controllerClass();
+
+    // Добавляем его в массив для обновления
+    this.spineObjectControllers.push(controller);
+
+    // Получаем спайн объект
+    const spine = controller.getSpine();
+
+    // Создаем интерактивный объект
+    // TODO: если нужно создавать подсветку, то нужно передавать в опциях кость или слот
+    const interactiveObject = new SpineInteractiveObject(controller.name, spine);
+
+    // Добавляем в сцену
+    this.parallaxBack.spine.addSlotObject(slotName, interactiveObject.displayObject);
+
+    // Возвращаем созданный интерактивный объект
+    return interactiveObject;
+  }
+
+  /**
+   * Получает контроллер по его типу
+   * @param controllerClass Класс контроллера
+   * @returns Найденный контроллер или undefined, если не найден
+   */
+  public getControllerByType<T extends SpineObjectController>(
+    controllerClass: new (...args: any[]) => T,
+  ): T | undefined {
+    return this.spineObjectControllers.find((controller) => controller instanceof controllerClass) as T | undefined;
   }
 }

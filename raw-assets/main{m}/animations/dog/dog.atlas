@@ -1,0 +1,8 @@
+dog.png
+size:280,268
+filter:Linear,Linear
+scale:0.5
+dog
+bounds:2,2,137,264
+dog_screams
+bounds:141,2,137,264
