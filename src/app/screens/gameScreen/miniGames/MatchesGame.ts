@@ -1,5 +1,6 @@
 import { AnimationState, Spine } from '@esotericsoftware/spine-pixi-v8';
-import { Container, Point } from 'pixi.js';
+import { Container, Point, Texture } from 'pixi.js';
+import { MatchTrail } from './MatchTrail';
 
 const START_POSE: Point = new Point(0, -150); // Начальная позиция костяшки спички
 const BREAK_DELAY = 0.05; // Задержка перед сломом спички
@@ -49,11 +50,17 @@ export class MatchesGame extends Container {
   private breakTimer = BREAK_DELAY;
   private gameActive = false;
   private inCallBack: () => void;
+  private endGameCallBack: () => void;
 
-  constructor(inCallBack: () => void) {
+  private matchTrail: MatchTrail;
+
+  private endGame: boolean = false;
+
+  constructor(inCallBack: () => void, endGameCallBack: () => void) {
     super();
 
     this.inCallBack = inCallBack;
+    this.endGameCallBack = endGameCallBack;
 
     // Определяем область для чиркания как массив точек
     this.strikingArea = [new Point(-91, -104), new Point(-50, -265), new Point(245, 63), new Point(195, 176)];
@@ -72,6 +79,9 @@ export class MatchesGame extends Container {
     this.state.setAnimation(0, 'in');
     this.state.setAnimation(1, 'normal');
     this.state.setAnimation(2, 'fx_tail', true);
+
+    this.matchTrail = new MatchTrail(Texture.from('trail'), 6, 30);
+    this.spine.addSlotObject('matches', this.matchTrail);
 
     this.addChild(this.spine);
   }
@@ -94,13 +104,15 @@ export class MatchesGame extends Container {
           console.log('Спичка успешно зажжена!');
         } else if (entry.animation?.name === 'out') {
           console.log('Игра завершена!');
+          this.endGameCallBack();
+          this.endGame = true;
         }
       },
     });
   }
 
   public onDown(x: number, y: number) {
-    if (!this.ready) return;
+    if (!this.ready || this.endGame) return;
 
     this.mouseHold = true;
     this.gameActive = true;
@@ -134,11 +146,13 @@ export class MatchesGame extends Container {
       bone.y = START_POSE.y;
       this.currentPos.set(START_POSE.x, START_POSE.y);
       this.targetPos.set(START_POSE.x, START_POSE.y);
+
+      this.matchTrail.reset(START_POSE.x, START_POSE.y);
     }
   }
 
   public onUp() {
-    if (!this.ready || !this.gameActive) return;
+    if (!this.ready || !this.gameActive || this.endGame) return;
     this.mouseHold = false;
     this.currentSpeed = 0;
     this.shakeOffsetX = 0;
@@ -161,10 +175,15 @@ export class MatchesGame extends Container {
       this.breakTimer = BREAK_DELAY;
       this.state.setAnimation(1, 'fail', false);
     }
+
+    const bone = this.spine.skeleton.findBone('match_move');
+    if (bone) {
+      this.matchTrail.reset(bone.x, bone.y);
+    }
   }
 
   public onMove(x: number, y: number) {
-    if (!this.ready || !this.mouseHold) return;
+    if (!this.ready || !this.mouseHold || this.endGame) return;
 
     // Теперь просто обновляем текущие позиции мыши
     this.prevX = x;
@@ -179,7 +198,6 @@ export class MatchesGame extends Container {
 
       if (!inArea) {
         this.successTimer = 0;
-        console.log('Вышли из области чиркания. Счетчик сброшен.');
       }
     }
   }
@@ -234,10 +252,16 @@ export class MatchesGame extends Container {
   }
 
   public update(dt: number) {
+    if (this.endGame) return;
+
     // Обновляем Spine анимацию
     this.spine.update(dt);
 
     if (!this.ready && !this.gameActive) {
+      const bone = this.spine.skeleton.findBone('match_move');
+      if (bone) {
+        this.matchTrail.update(false, dt, this.matchPercent);
+      }
       return;
     }
 
@@ -278,6 +302,14 @@ export class MatchesGame extends Container {
       this.targetPos.x = this.spineDownPos.x + cursorOffsetX;
       this.targetPos.y = this.spineDownPos.y + cursorOffsetY;
 
+      // console.log(this.targetPos.x, this.targetPos.y);
+
+      // Минимальная позиция по X -380, максимальная 740
+      // Минимальная позиция по Y -426, максимальная 300
+
+      /* this.targetPos.x = Math.min(Math.max(-380, this.spineDownPos.x + cursorOffsetX), 740);
+      this.targetPos.y = Math.min(Math.max(-426, this.spineDownPos.y + cursorOffsetY), 300); */
+
       // 3. Плавно перемещаем текущую позицию к целевой
       this.currentPos.x += (this.targetPos.x - this.currentPos.x) * this.FOLLOW_SPEED * dt * correctFactor;
       this.currentPos.y += (this.targetPos.y - this.currentPos.y) * this.FOLLOW_SPEED * dt * correctFactor;
@@ -290,6 +322,12 @@ export class MatchesGame extends Container {
       if (bone) {
         bone.x = this.currentPos.x + shakeOffset.x;
         bone.y = this.currentPos.y + shakeOffset.y;
+
+        const isTrailActive =
+          this.isInStrikingArea && this.currentSpeed >= this.MIN_SPEED && this.currentSpeed <= this.MAX_SPEED;
+
+        this.matchTrail.addXY(bone.x, bone.y);
+        this.matchTrail.update(isTrailActive, dt, this.matchPercent);
       }
 
       // 6. Проверяем скорость и нахождение в области
@@ -297,13 +335,11 @@ export class MatchesGame extends Container {
 
       // Проверка скорости (слишком медленно)
       if (this.currentSpeed < this.MIN_SPEED && this.isInStrikingArea && this.successTimer > 0) {
-        console.log('Слишком медленно! Счетчик сброшен.');
         this.successTimer = 0;
       }
 
       // Проверка скорости (слишком быстро)
       if (this.currentSpeed > this.MAX_SPEED && this.isInStrikingArea && !this.matchMustBeBroken) {
-        console.log('Слишком быстро! Спичка сломалась.');
         this.endMatchesMove(false);
         return;
       }
@@ -311,18 +347,20 @@ export class MatchesGame extends Container {
       // Если соблюдены все условия для успешного чиркания
       if (this.isInStrikingArea && this.currentSpeed >= this.MIN_SPEED && this.currentSpeed <= this.MAX_SPEED) {
         this.successTimer += dt;
-        console.log(
-          `Время чиркания: ${this.successTimer.toFixed(2)}/${this.SUCCESS_TIME.toFixed(2)}; Скорость: ${this.currentSpeed.toFixed(2)}`,
-        );
 
         if (this.successTimer >= this.SUCCESS_TIME) {
-          console.log('Достаточно чиркания! Спичка зажигается.');
           this.endMatchesMove(true);
         }
       }
 
       // Сохраняем текущие координаты для следующего кадра
       this.lastPos.set(this.prevX, this.prevY);
+    } else {
+      // Если мышь не удерживается, обновляем трейл с неактивным состоянием
+      const bone = this.spine.skeleton.findBone('match_move');
+      if (bone) {
+        this.matchTrail.update(false, dt, this.matchPercent);
+      }
     }
   }
 
@@ -343,5 +381,10 @@ export class MatchesGame extends Container {
     }
 
     return inside;
+  }
+
+  private get matchPercent(): number {
+    // Возвращаем процент успешного чиркания
+    return this.successTimer / this.SUCCESS_TIME;
   }
 }

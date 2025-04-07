@@ -39,7 +39,7 @@ export class GameScreen extends Container implements AppScreen {
   private currentMouseX: number = 0;
   private currentMouseY: number = 0;
 
-  private matchesGame: MatchesGame;
+  private matchesGame: MatchesGame | null = null;
 
   constructor() {
     super();
@@ -105,9 +105,19 @@ export class GameScreen extends Container implements AppScreen {
     // TODO: тестово выпилилить
     // как будто бы игрок кликнул по костру спичками.
     this.minigameStarted = true;
-    this.matchesGame = new MatchesGame(() => {
-      console.log('matches game start!');
-    });
+    this.matchesGame = new MatchesGame(
+      () => {
+        console.log('matches game start!');
+      },
+      () => {
+        console.log('matches game end!');
+        this.minigameStarted = false;
+        if (this.matchesGame) {
+          this.matchesGame.destroy({ children: true });
+          this.matchesGame = null;
+        }
+      },
+    );
     /// /////////////////////////////////////////
 
     /// /////////// DISPLAY ORDER //////////////
@@ -192,7 +202,7 @@ export class GameScreen extends Container implements AppScreen {
   private onUp(e: FederatedPointerEvent) {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
-    if (this.minigameStarted) {
+    if (this.minigameStarted && this.matchesGame) {
       this.matchesGame.onUp();
     }
 
@@ -204,7 +214,7 @@ export class GameScreen extends Container implements AppScreen {
   private onDown(e: FederatedPointerEvent) {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
-    if (this.minigameStarted) {
+    if (this.minigameStarted && this.matchesGame) {
       this.matchesGame.onDown(x, y);
     }
 
@@ -217,7 +227,7 @@ export class GameScreen extends Container implements AppScreen {
   private onMove(e: FederatedPointerEvent) {
     const { x, y } = engine().virtualScreen.toVirtualCoordinates(e.global.x, e.global.y);
 
-    if (this.minigameStarted) {
+    if (this.minigameStarted && this.matchesGame) {
       this.matchesGame.onMove(x, y);
     }
 
@@ -243,7 +253,7 @@ export class GameScreen extends Container implements AppScreen {
   public update(_time: Ticker) {
     const delta = _time.elapsedMS / 1000;
 
-    if (this.minigameStarted) {
+    if (this.minigameStarted && this.matchesGame) {
       // TODO: нужно будет как-то по-другому обновлять мини-игры
       this.matchesGame.update(delta);
     }

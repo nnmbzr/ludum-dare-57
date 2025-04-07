@@ -26,7 +26,7 @@ export class MainScreen extends Container implements AppScreen {
     this.mainContainer.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     this.addChild(this.mainContainer);
 
-    this.onglobalmousemove = this.onMouseMove.bind(this);
+    this.on('mousemove', this.onMouseMove.bind(this));
     this.on('mousedown', this.onMouseDown.bind(this));
     this.eventMode = 'static';
 
