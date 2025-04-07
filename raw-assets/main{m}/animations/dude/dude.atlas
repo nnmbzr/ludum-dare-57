@@ -1,0 +1,17 @@
+dude.png
+size:1532,1047
+filter:Linear,Linear
+Head
+bounds:2,442,603,914
+rotate:90
+arm
+bounds:627,219,206,221
+chair_fire
+bounds:2,2,438,623
+rotate:90
+eyelid
+bounds:627,186,77,31
+head_fire
+bounds:918,131,603,914
+shadow
+bounds:627,29,903,100

@@ -49,7 +49,7 @@ export class ItemsDragging extends Container {
       this.itemBaseScale = this.fitSpriteToCell(sprite);
     }
 
-    console.log('itemBaseScale', this.itemBaseScale);
+    // console.log('itemBaseScale', this.itemBaseScale);
 
     this.currentItem = sprite;
     this.currentItemId = id;
@@ -77,7 +77,7 @@ export class ItemsDragging extends Container {
    * @param x Позиция мыши X
    * @param y Позиция мыши Y
    */
-  public onMouseMove(x: number, y: number): void {
+  public onMove(x: number, y: number): void {
     if (!this.currentItem) return;
 
     this.targetPos = { x, y };

@@ -14,7 +14,7 @@ export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
 
 // УСКОРЯЕМ РАЗРАБОТКУ!!!!!111
-export const SHOW_MENU = false;
+export const SHOW_MENU = true;
 
 /**
  * Importing these modules will automatically register there plugins with the engine.
@@ -43,6 +43,13 @@ PixiPlugin.registerPIXI(PIXI);
       virtualHeight: SCREEN_HEIGHT, // Фиксированное виртуальное разрешение по высоте
       letterbox: true, // Включаем режим letterbox
       letterboxColor: 0x000000, // Цвет заглушек по бокам (совпадает с фоном)
+    },
+    eventMode: 'passive',
+    eventFeatures: {
+      move: true,
+      globalMove: false,
+      click: true,
+      wheel: false,
     },
   });
 
