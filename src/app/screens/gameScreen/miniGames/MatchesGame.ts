@@ -1,5 +1,6 @@
 import { AnimationState, Spine } from '@esotericsoftware/spine-pixi-v8';
 import { Container, Point } from 'pixi.js';
+import { MatchesEmitter } from './MatchesEmitter';
 
 const START_POSE: Point = new Point(0, -150); // Начальная позиция костяшки спички
 const BREAK_DELAY = 0.05; // Задержка перед сломом спички
@@ -49,6 +50,7 @@ export class MatchesGame extends Container {
   private breakTimer = BREAK_DELAY;
   private gameActive = false;
   private inCallBack: () => void;
+  private emitter: MatchesEmitter;
 
   constructor(inCallBack: () => void) {
     super();
@@ -72,6 +74,9 @@ export class MatchesGame extends Container {
     this.state.setAnimation(0, 'in');
     this.state.setAnimation(1, 'normal');
     this.state.setAnimation(2, 'fx_tail', true);
+
+    // Initialize the particle emitter
+    this.emitter = new MatchesEmitter(this.spine);
 
     this.addChild(this.spine);
   }
@@ -143,6 +148,9 @@ export class MatchesGame extends Container {
     this.currentSpeed = 0;
     this.shakeOffsetX = 0;
     this.shakeOffsetY = 0;
+    
+    // Stop emitting particles when mouse is released
+    this.emitter.stop();
   }
 
   private endMatchesMove(success = false) {
@@ -153,12 +161,19 @@ export class MatchesGame extends Container {
       this.isInStrikingArea = false;
       this.shakeOffsetX = 0;
       this.shakeOffsetY = 0;
+      
+      // Stop emitting particles when match is successfully lit
+      this.emitter.stop();
 
       this.ready = false;
       this.state.setAnimation(1, 'win', false);
     } else {
       this.matchMustBeBroken = true;
       this.breakTimer = BREAK_DELAY;
+      
+      // Stop emitting particles when match breaks
+      this.emitter.stop();
+      
       this.state.setAnimation(1, 'fail', false);
     }
   }
@@ -237,6 +252,9 @@ export class MatchesGame extends Container {
     // Обновляем Spine анимацию
     this.spine.update(dt);
 
+    // Always update the emitter to allow existing particles to finish
+    this.emitter.update(dt);
+
     if (!this.ready && !this.gameActive) {
       return;
     }
@@ -250,6 +268,7 @@ export class MatchesGame extends Container {
         this.shakeOffsetX = 0;
         this.shakeOffsetY = 0;
         this.ready = false;
+        this.emitter.stop();
       }
     }
 
@@ -265,6 +284,11 @@ export class MatchesGame extends Container {
       // Рассчитываем скорость (пиксели в секунду)
       if (dt > 0) {
         this.currentSpeed = moveDist / dt;
+      }
+
+      // Update emitter move direction for particle direction
+      if (deltaX !== 0 || deltaY !== 0) {
+        this.emitter.setMoveDirection(deltaX, deltaY);
       }
 
       // 2. Обновляем целевую позицию c учетом начальной позиции при нажатии
@@ -299,11 +323,13 @@ export class MatchesGame extends Container {
       if (this.currentSpeed < this.MIN_SPEED && this.isInStrikingArea && this.successTimer > 0) {
         console.log('Слишком медленно! Счетчик сброшен.');
         this.successTimer = 0;
+        this.emitter.stop();
       }
 
       // Проверка скорости (слишком быстро)
       if (this.currentSpeed > this.MAX_SPEED && this.isInStrikingArea && !this.matchMustBeBroken) {
         console.log('Слишком быстро! Спичка сломалась.');
+        this.emitter.stop();
         this.endMatchesMove(false);
         return;
       }
@@ -311,6 +337,14 @@ export class MatchesGame extends Container {
       // Если соблюдены все условия для успешного чиркания
       if (this.isInStrikingArea && this.currentSpeed >= this.MIN_SPEED && this.currentSpeed <= this.MAX_SPEED) {
         this.successTimer += dt;
+        
+        // Update emitter power based on success progress
+        const powerLevel = this.successTimer / this.SUCCESS_TIME;
+        this.emitter.setPower(powerLevel);
+        
+        // Start emitting particles
+        this.emitter.start();
+        
         console.log(
           `Время чиркания: ${this.successTimer.toFixed(2)}/${this.SUCCESS_TIME.toFixed(2)}; Скорость: ${this.currentSpeed.toFixed(2)}`,
         );
@@ -319,6 +353,9 @@ export class MatchesGame extends Container {
           console.log('Достаточно чиркания! Спичка зажигается.');
           this.endMatchesMove(true);
         }
+      } else {
+        // If not in striking area or speed is not optimal, stop emitting
+        this.emitter.stop();
       }
 
       // Сохраняем текущие координаты для следующего кадра

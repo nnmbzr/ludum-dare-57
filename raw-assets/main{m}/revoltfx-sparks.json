@@ -1,0 +1,69 @@
+{
+  "name": "default-bundle",
+  "type": "bundle",
+  "particleEmitters": [
+    {
+      "name": "sparks-emitter",
+      "type": "cpu",
+      "enabled": true,
+      "blendMode": "add",
+      "duration": -1,
+      "emitFrequency": 0.03,
+      "emitDelay": 0,
+      "maxParticles": 1000,
+      "addAtBack": false,
+      "spawnType": "point",
+      "emissionRectX": 0,
+      "emissionRectY": 0,
+      "emissionRectWidth": 0,
+      "emissionRectHeight": 0,
+      "emissionCircleX": 0,
+      "emissionCircleY": 0,
+      "emissionCircleRadius": 0,
+      "emissionWidth": 0,
+      "emissionHeight": 0,
+      "emissionConePosition": "center",
+      "particleSettings": {
+        "textureFrame": "sparks",
+        "depthSorting": false,
+        "ttl": {
+          "isRandom": true,
+          "min": 0.15,
+          "max": 0.35
+        },
+        "life": 0,
+        "velocity": {
+          "isRandom": true,
+          "initial": {
+            "min": 200,
+            "max": 1000
+          },
+          "target": {
+            "min": 200,
+            "max": 1000
+          }
+        },
+        "angle": {
+          "isRandom": true,
+          "min": 225,
+          "max": 320
+        },
+        "angleDelta": {
+          "isRandom": true,
+          "min": 0,
+          "max": 20
+        },
+        "startScale": 0.5,
+        "endScale": 1,
+        "startAlpha": 1,
+        "endAlpha": 0.31,
+        "startColor": "#8f2b07",
+        "endColor": "#ff1500"
+      }
+    }
+  ],
+  "sequences": [],
+  "colorSeeds": [
+    "#FFFFFF"
+  ]
+}
