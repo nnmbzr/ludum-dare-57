@@ -1,0 +1,15 @@
+mini_dude.png
+size:880,392
+filter:Linear,Linear
+scale:0.5
+bg
+bounds:2,2,469,388
+head
+bounds:473,9,269,381
+mush
+bounds:744,159,77,73
+part
+bounds:744,86,76,71
+offsets:0,1,76,72
+rot
+bounds:744,234,134,156

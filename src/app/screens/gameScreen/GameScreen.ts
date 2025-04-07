@@ -23,8 +23,11 @@ import { DudeController } from './controllers/DudeController';
 import { GirlController } from './controllers/GirlController';
 import { DogController } from './controllers/DogController';
 import { BackpackGame } from './miniGames/BackpackGame';
+import { DudeMushroom } from './miniGames/DudeMushroom';
+import { CarGame } from './miniGames/CarGame';
+import { MarshmeloGame } from './miniGames/MarshmeloGame';
 
-export type MiniGame = MatchesGame | BackpackGame | null;
+export type MiniGame = MatchesGame | BackpackGame | DudeMushroom | CarGame | MarshmeloGame | null;
 
 /** The screen that holds the app */
 export class GameScreen extends Container implements AppScreen {
@@ -129,7 +132,7 @@ export class GameScreen extends Container implements AppScreen {
     this.setupLevelInteraction();
 
     setTimeout(() => {
-      this.startBackpackMinigame();
+      this.startDudeMinigame();
     }, 200);
   }
 
@@ -212,8 +215,8 @@ export class GameScreen extends Container implements AppScreen {
     this.interactionManager.register(dogInteractive);
   }
 
-  private startBackpackMinigame() {
-    this.currentMinigame = new BackpackGame(
+  private startDudeMinigame() {
+    this.currentMinigame = new DudeMushroom(
       () => {}, // Коллбек при инициализации
       () => {
         this.minigameStarted = false;
@@ -242,6 +245,37 @@ export class GameScreen extends Container implements AppScreen {
 
     this.playMinigame();
   }
+
+  /* private startBackpackMinigame() {
+    this.currentMinigame = new BackpackGame(
+      () => {}, // Коллбек при инициализации
+      () => {
+        this.minigameStarted = false;
+        this.inventoryContainer.y = -300;
+        gsap.to(this.inventoryContainer, {
+          duration: 0.3,
+          y: 0,
+          ease: 'power1.out',
+          onStart: () => {
+            this.inventoryContainer.visible = true;
+            const onComplete = async () => {
+              await engine().navigation.dismissPopup();
+              // Удаляем только на следующий тик
+              if (this.currentMinigame) {
+                this.currentMinigame.destroy({ children: true });
+                this.currentMinigame = null;
+              }
+              this.resume();
+            };
+
+            onComplete();
+          },
+        });
+      },
+    );
+
+    this.playMinigame();
+  } */
 
   private startMatchesGame() {
     /// /////////// TEST MINIGAME ////////////////
@@ -274,10 +308,10 @@ export class GameScreen extends Container implements AppScreen {
       },
     );
 
-    this.playMinigame();
+    this.playMinigame(-250);
   }
 
-  private playMinigame() {
+  private playMinigame(yOffset: number = 0) {
     if (!this.currentMinigame) {
       console.warn('Minigame is null');
       return;
@@ -287,7 +321,7 @@ export class GameScreen extends Container implements AppScreen {
     this.inventoryContainer.visible = false;
     /// /////////////////////////////////////////
 
-    engine().navigation.presentPopup(PhotoPopup, this.currentMinigame.getPhoto(), this.currentMinigame);
+    engine().navigation.presentPopup(PhotoPopup, this.currentMinigame.getPhoto(), this.currentMinigame, yOffset);
   }
 
   private draggingDropCallback(rect: Rectangle, id: string, itemType: 'inventory' | 'game') {

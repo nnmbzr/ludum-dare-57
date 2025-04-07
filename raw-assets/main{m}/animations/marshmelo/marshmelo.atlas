@@ -1,0 +1,34 @@
+marshmelo.png
+size:1204,365
+filter:Linear,Linear
+scale:0.5
+Hue/Saturation 1
+bounds:779,5,95,94
+rotate:90
+Layer 10 copy
+bounds:473,5,95,100
+rotate:90
+Layer 12
+bounds:575,5,95,100
+rotate:90
+Layer 14
+bounds:473,102,261,237
+rotate:90
+Layer 15
+bounds:875,45,55,51
+rotate:90
+Layer 22 copy
+bounds:2,2,469,361
+Layer 26
+bounds:677,5,95,100
+rotate:90
+Layer 27
+bounds:951,162,222,201
+Layer 29
+bounds:981,3,221,157
+Layer 7 copy
+bounds:928,45,55,51
+rotate:90
+Layer 9 copy
+bounds:712,102,261,237
+rotate:90

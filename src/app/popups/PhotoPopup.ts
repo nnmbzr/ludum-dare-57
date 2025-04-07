@@ -15,7 +15,7 @@ export class PhotoPopup extends Container {
   private photoOverlay: Sprite;
   private minigame: MatchesGame;
 
-  constructor(photo: string, minigame: MatchesGame) {
+  constructor(photo: string, minigame: MatchesGame, xOffset: number) {
     super();
 
     this.minigame = minigame;
@@ -38,7 +38,7 @@ export class PhotoPopup extends Container {
     this.photoOverlay.anchor.set(0.5);
     this.panel.addChild(this.photoOverlay);
 
-    this.minigame.position.set(-250, 0);
+    this.minigame.position.set(xOffset, 0);
     this.panel.addChild(this.minigame);
 
     //  this.eventMode = 'static';

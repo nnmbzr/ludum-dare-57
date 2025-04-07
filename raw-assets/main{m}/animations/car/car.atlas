@@ -1,0 +1,17 @@
+car.png
+size:1328,725
+filter:Linear,Linear
+scale:0.5
+back
+bounds:2,5,919,718
+offsets:0,1,919,719
+closed
+bounds:923,2,255,209
+rotate:90
+opened
+bounds:923,259,363,192
+ring
+bounds:1134,108,184,149
+wheel
+bounds:923,453,270,403
+rotate:90
