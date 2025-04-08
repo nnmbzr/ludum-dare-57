@@ -180,7 +180,7 @@ export class GameScreen extends Container implements AppScreen {
 
     /// /////// Еотка //////////
     const girlInteractive = this.createAnimationObject(GirlController, 'girlContainer');
-    dudeInteractive.acceptItem('ring', 'give_ring');
+    girlInteractive.acceptItem('ring', 'give_ring');
     girlInteractive.setClickHandler(async () => {});
     this.interactionManager.register(girlInteractive);
 
@@ -424,6 +424,8 @@ export class GameScreen extends Container implements AppScreen {
                   marshmelowInteractive.removeHighlight();
                   marshmelow.destroy();
 
+                  console.log('Clicked on marshmeloContainer!');
+
                   this.marshmeloGet = true;
 
                   (this.getControllerByType(GirlController) as GirlController).giveStick();
@@ -478,6 +480,7 @@ export class GameScreen extends Container implements AppScreen {
       } else if (result.actionType === 'give_mushroom') {
         this.startDudeMinigame();
       } else if (result.actionType === 'give_ring') {
+        console.log(this.guitarPlay, this.bonfireFire, this.marshmeloGet, this.dudeDrive, this.ringGet);
         if (this.guitarPlay && this.bonfireFire && this.marshmeloGet && this.dudeDrive && this.ringGet) {
           this.gameOver();
         } else {
@@ -645,7 +648,7 @@ export class GameScreen extends Container implements AppScreen {
 
   /** Show screen with animations */
   public async show(): Promise<void> {
-    // engine().audio.bgm.play('main/sounds/bgm-main.mp3', { volume: 0.5 });
+    engine().audio.bgm.play('main/sounds/jamtrack-event-1.wav', { volume: 0.25 });
 
     // const elementsToAnimate = [this.settingsButton, this.inventory];
     const elementsToAnimate = [this.inventory];
