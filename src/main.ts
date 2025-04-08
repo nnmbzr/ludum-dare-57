@@ -21,6 +21,7 @@ export const SHOW_MENU = true;
  */
 import '@pixi/sound';
 import { GameScreen } from './app/screens/gameScreen/GameScreen';
+import { LoadScreen } from './app/screens/LoadScreen';
 // import { setupVirtualInteraction } from './engine/interaction/VirtualInteraction';
 // import "@esotericsoftware/spine-pixi-v8";
 
@@ -63,7 +64,7 @@ PixiPlugin.registerPIXI(PIXI);
 
   // Show the load screen
   // TODO: Нужно будет не забыть раскоментировать
-  // await engine.navigation.showScreen(LoadScreen);
+  await engine.navigation.showScreen(LoadScreen);
 
   if (SHOW_MENU) {
     await engine.navigation.showScreen(MainScreen);

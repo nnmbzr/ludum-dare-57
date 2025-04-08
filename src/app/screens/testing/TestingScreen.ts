@@ -189,7 +189,7 @@ export class TestingScreen extends Container implements AppScreen {
 
   /** Show screen with animations */
   public async show(): Promise<void> {
-    engine().audio.bgm.play('main/sounds/bgm-main.mp3', { volume: 0.5 });
+    // engine().audio.bgm.play('main/sounds/bgm-main.mp3', { volume: 0.5 });
 
     const elementsToAnimate = [this.pauseButton, this.settingsButton, this.addButton, this.removeButton];
 
