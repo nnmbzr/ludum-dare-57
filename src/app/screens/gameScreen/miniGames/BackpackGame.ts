@@ -95,7 +95,6 @@ export class BackpackGame extends Container {
   private prepareCurrentObject() {
     // Подготавливаем текущий объект к взаимодействию
     const currentBone = this.objectSequence[this.currentObjectIndex];
-    console.log(`Подготовка объекта: ${currentBone}`);
 
     // Возвращаем объект на его начальную позицию
     this.resetObjectPosition(currentBone);
@@ -343,15 +342,11 @@ export class BackpackGame extends Container {
           }
         }
 
-        console.log(`Bone position: ${bone.y} start: ${startPos?.y}`, startPos && bone.y >= startPos.y + 50);
-
         // Если объект упал ниже начальной позиции, возвращаем его на место
         if (startPos && bone.y <= startPos.y - 50) {
           // bone.y = startPos.y; // Ограничиваем позицию
           this.objectVelocityY = 0; // Сбрасываем скорость
           this.isFlying = false; // Выключаем режим полета
-
-          console.log(`Объект ${currentBone} вернулся на начальную позицию`);
 
           // Добавляем небольшую анимацию "отскока" для наглядности
           this.returnObjectToStart();

@@ -68,4 +68,10 @@ export class SpriteInteractiveObject extends BaseInteractiveObject {
       bounds.bottom > realBounds.top
     );
   }
+
+  public removeHighlight(): void {
+    if (this.highlightSprite) {
+      this.highlightSprite.destroy();
+    }
+  }
 }
