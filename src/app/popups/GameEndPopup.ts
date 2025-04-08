@@ -37,10 +37,15 @@ export class GameEndPopup extends Container {
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 5 })];
     }
+
+    engine().audio.bgm.play('main/sounds/jamtrack-end.wav', { volume: 0.35 });
+
     this.bg.alpha = 0;
     this.panel.pivot.y = -400;
     gsap.to(this.bg, { alpha: 0.8, duration: 0.2, ease: 'none' });
     await gsap.to(this.panel.pivot, { y: 0, duration: 0.3, ease: 'back.out' });
+
+    gsap.to(this.bg, { alpha: 1, duration: 10, ease: 'none' });
   }
 
   /** Dismiss the popup, animated */
