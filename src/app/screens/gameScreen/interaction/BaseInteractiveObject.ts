@@ -131,4 +131,8 @@ export abstract class BaseInteractiveObject implements IInteractiveObject {
     this.displayObject.addChild(this.highlightSprite);
     this.highlightSprite.zIndex = -1;
   }
+
+  public disable(): void {
+    this.displayObject.eventMode = 'none';
+  }
 }

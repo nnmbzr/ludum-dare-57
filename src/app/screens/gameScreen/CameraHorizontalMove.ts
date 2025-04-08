@@ -12,7 +12,11 @@ export class CameraHorizontalMove {
 
   private cameraMoveTweener: gsap.core.Tween | null = null;
 
-  constructor(gameContainer: Container, screenMaxWidth: number) {
+  constructor(
+    gameContainer: Container,
+    screenMaxWidth: number,
+    private onMoveEnd: (show: boolean) => void,
+  ) {
     this.gameContainer = gameContainer;
     this.screenAdditive = (screenMaxWidth - SCREEN_WIDTH) / 2;
   }
@@ -36,6 +40,10 @@ export class CameraHorizontalMove {
       this.cameraMoveTweener.kill();
     }
 
+    if (this.currentPosition !== -1) {
+      this.onMoveEnd(false);
+    }
+
     this.cameraMoveTweener = gsap.to(this.gameContainer, {
       duration: 0.75,
       x: this.currentPosition * this.screenAdditive,
@@ -43,8 +51,16 @@ export class CameraHorizontalMove {
       // ease: 'sine.inOut',
       onComplete: () => {
         this.cameraMoveTweener = null;
+        if (this.currentPosition === -1) {
+          this.onMoveEnd(true);
+        }
       },
     });
+  }
+
+  public resetCameraPosition(): void {
+    this.currentPosition = 0;
+    this.changeCameraPosition();
   }
 
   public getCameraOffset(): number {

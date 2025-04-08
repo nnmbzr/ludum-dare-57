@@ -13,7 +13,7 @@ export class Inventory extends Container {
   private readonly inventoryWidth: number = SCREEN_WIDTH;
   private readonly inventoryHeight: number = 100;
   private readonly cellPadding: number = 40;
-  private readonly startX: number = 40;
+  private readonly startX: number = 100;
   private readonly maxCells: number = 8;
 
   // Контейнеры и спрайты
@@ -40,6 +40,7 @@ export class Inventory extends Container {
     this.background = Sprite.from('inventory_bg');
     this.background.width = this.inventoryWidth;
     this.background.height = this.inventoryHeight;
+    this.background.alpha = 0.8;
     this.addChild(this.background);
 
     // Располагаем инвентарь вверху экрана

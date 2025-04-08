@@ -1,7 +1,6 @@
 import { Container, FederatedPointerEvent, Sprite, Ticker } from 'pixi.js';
 
 import { engine } from '../../getEngine';
-import { PausePopup } from '../../popups/PausePopup';
 
 import { AppScreen } from '../../../engine/navigation/navigation';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../main';
@@ -128,9 +127,9 @@ export class MainScreen extends Container implements AppScreen {
   public async hide() {}
 
   /** Auto pause the app when window go out of focus */
-  public blur() {
+  /* public blur() {
     if (!engine().navigation.currentPopup) {
       engine().navigation.presentPopup(PausePopup);
     }
-  }
+  } */
 }

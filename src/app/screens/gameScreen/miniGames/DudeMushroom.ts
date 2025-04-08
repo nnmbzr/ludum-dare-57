@@ -84,6 +84,7 @@ export class DudeMushroom extends Container {
 
     const bone = this.spine.skeleton.findBone('jaw_move');
     if (bone) {
+      // TODO: вернуть обратно!
       this.currentProgress += 0.05;
 
       gsap.to(bone, {

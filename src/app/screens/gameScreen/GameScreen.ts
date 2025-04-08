@@ -1,9 +1,6 @@
-import { FancyButton } from '@pixi/ui';
 import { Container, FederatedPointerEvent, Rectangle, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../getEngine';
-import { PausePopup } from '../../popups/PausePopup';
-import { SettingsPopup } from '../../popups/SettingsPopup';
 
 import { AppScreen } from '../../../engine/navigation/navigation';
 import gsap from 'gsap';
@@ -26,6 +23,8 @@ import { BackpackGame } from './miniGames/BackpackGame';
 import { DudeMushroom } from './miniGames/DudeMushroom';
 import { CarGame } from './miniGames/CarGame';
 import { MarshmeloGame } from './miniGames/MarshmeloGame';
+import { SpriteInteractiveObject } from './interaction/SpriteInteractiveObject';
+import { GameEndPopup } from '../../popups/GameEndPopup';
 
 export type MiniGame = MatchesGame | BackpackGame | DudeMushroom | CarGame | MarshmeloGame | null;
 
@@ -39,7 +38,7 @@ export class GameScreen extends Container implements AppScreen {
   public minigameContainer: Container;
   public overlayContainer: Container;
 
-  private settingsButton: FancyButton;
+  // private settingsButton: FancyButton;
 
   private paused = false;
   private blockScreenMove = false;
@@ -60,6 +59,14 @@ export class GameScreen extends Container implements AppScreen {
 
   private spineObjectControllers: SpineObjectController[] = [];
 
+  private guitarPlay = false;
+  private bonfireFire = false;
+  private marshmeloGet = false;
+  private dudeDrive = false;
+  private ringGet = false;
+
+  private shadowCar: Sprite | null = null;
+
   constructor() {
     super();
 
@@ -69,7 +76,7 @@ export class GameScreen extends Container implements AppScreen {
     this.minigameContainer.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     this.overlayContainer = new Container();
 
-    const buttonAnimations = {
+    /* const buttonAnimations = {
       hover: {
         props: {
           scale: { x: 1.1, y: 1.1 },
@@ -82,22 +89,29 @@ export class GameScreen extends Container implements AppScreen {
         },
         duration: 100,
       },
-    };
+    }; */
 
-    this.settingsButton = new FancyButton({
+    /* this.settingsButton = new FancyButton({
       defaultView: 'icon-settings',
       anchor: 0.5,
       animations: buttonAnimations,
     });
     this.settingsButton.onPress.connect(() => engine().navigation.presentPopup(SettingsPopup));
-    this.settingsButton.position.set(SCREEN_WIDTH - 30, 30);
+    this.settingsButton.position.set(SCREEN_WIDTH - 30, 30); */
 
     this.parallaxBack = new ParallaxBack('background');
     this.parallaxBack.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-    this.parallaxBack.playIdle();
 
     // TODO: временный x2 скейл! УБРАТЬ!
-    this.cameraHorizontalMove = new CameraHorizontalMove(this.mainContainer, this.parallaxBack.width);
+    this.cameraHorizontalMove = new CameraHorizontalMove(
+      this.mainContainer,
+      this.parallaxBack.width,
+      (hide: boolean) => {
+        if (this.shadowCar) {
+          this.shadowCar.visible = hide;
+        }
+      },
+    );
 
     this.on('mousemove', this.onMove.bind(this));
     this.on('mousedown', this.onDown.bind(this));
@@ -113,7 +127,8 @@ export class GameScreen extends Container implements AppScreen {
       this.playInitAnimation();
     }
 
-    this.testFuillInventory();
+    // TODO: УБРАТЬ!!!!!
+    // this.testFuillInventory();
 
     /// /////////// DISPLAY ORDER //////////////
 
@@ -125,32 +140,18 @@ export class GameScreen extends Container implements AppScreen {
     this.addChild(this.itemsDragging);
 
     this.addChild(this.minigameContainer);
-    this.addChild(this.settingsButton);
+    // this.addChild(this.settingsButton);
     this.addChild(this.overlayContainer);
 
     this.interactionManager = new InteractionManager();
     this.setupLevelInteraction();
 
-    setTimeout(() => {
+    /* setTimeout(() => {
       this.startCarGame();
-    }, 200);
+    }, 200); */
   }
 
   private setupLevelInteraction() {
-    /* const fire = Sprite.from('campfire');
-    fire.anchor.set(0.5);
-
-    const fireInteractive = new SpriteInteractiveObject('campfire', fire);
-    this.parallaxBack.spine.addSlotObject('fireContainer', fireInteractive.displayObject);
-
-    fireInteractive.acceptItem('icon-settings', 'light_fire');
-
-    fireInteractive.setClickHandler(() => {
-      console.log('Clicked on campfire!');
-      // Здесь можно добавить анимацию или звук
-    });
-
-    this.interactionManager.register(fireInteractive); */
     // fire_idle
     // fire_on
     // idle
@@ -162,46 +163,25 @@ export class GameScreen extends Container implements AppScreen {
 
     const bonfireInteractive = this.createAnimationObject(BonfireController, 'fireContainer');
 
-    bonfireInteractive.acceptItem('white_flash', 'light_fire');
-    bonfireInteractive.setClickHandler(async () => {
-      (this.getControllerByType(BoyController) as BoyController).setFireState(true);
-      (this.getControllerByType(DudeController) as DudeController).setFireState(true);
-      (this.getControllerByType(GirlController) as GirlController).setFireState(true);
-      await (this.getControllerByType(BonfireController) as BonfireController).lightFire();
-    });
+    bonfireInteractive.acceptItem('match', 'light_fire');
+    bonfireInteractive.setClickHandler(async () => {});
     this.interactionManager.register(bonfireInteractive);
 
     /// /////// Мальчик //////////
     const boyInteractive = this.createAnimationObject(BoyController, 'boyContainer');
-    boyInteractive.setClickHandler(async () => {
-      console.log('Кликнули по мальчику!');
-
-      // Зажигаем костер и ждем завершения анимации
-      await (this.getControllerByType(BoyController) as BoyController).giveGuitar();
-
-      console.log('Персонаж получил гитару!');
-      // ...
-    });
+    boyInteractive.acceptItem('guitar', 'guitar_play');
     this.interactionManager.register(boyInteractive);
 
     /// /////// Дружок хуев //////////
     const dudeInteractive = this.createAnimationObject(DudeController, 'dudeContainer');
-    dudeInteractive.setClickHandler(async () => {
-      console.log('Кликнули по дружку!');
-      // Здесь можно добавить анимацию или звук
-
-      await (this.getControllerByType(DudeController) as DudeController).driveAway();
-    });
+    dudeInteractive.acceptItem('mashroom', 'give_mushroom');
+    dudeInteractive.setClickHandler(async () => {});
     this.interactionManager.register(dudeInteractive);
 
     /// /////// Еотка //////////
     const girlInteractive = this.createAnimationObject(GirlController, 'girlContainer');
-    girlInteractive.setClickHandler(async () => {
-      console.log('Кликнули по зазнобе!');
-      // Здесь можно добавить анимацию или звук
-
-      await (this.getControllerByType(GirlController) as GirlController).giveStick();
-    });
+    dudeInteractive.acceptItem('ring', 'give_ring');
+    girlInteractive.setClickHandler(async () => {});
     this.interactionManager.register(girlInteractive);
 
     /// /////// Пёсик //////////
@@ -213,8 +193,80 @@ export class GameScreen extends Container implements AppScreen {
       await (this.getControllerByType(DogController) as DogController).giveBall();
     });
     this.interactionManager.register(dogInteractive);
+
+    /// / /////////// РЮКЗАК ////////////////
+    const backPack = Sprite.from('backpack_fore');
+    backPack.anchor.set(0.5);
+
+    const backpackInteractive = new SpriteInteractiveObject('backPack', backPack);
+    this.parallaxBack.spine.addSlotObject('backpackContainer', backpackInteractive.displayObject);
+
+    backpackInteractive.setClickHandler(() => {
+      console.log('Clicked on backpackContainer!');
+      this.interactionManager.unregister('backPack');
+      backpackInteractive.disable();
+      backpackInteractive.removeHighlight();
+
+      this.startBackpackMinigame();
+    });
+
+    this.interactionManager.register(backpackInteractive);
+
+    /// ///// ГИТАРА
+    const guitar = Sprite.from('guitar');
+    guitar.anchor.set(0.5);
+
+    const guitarInteractive = new SpriteInteractiveObject('guitar', guitar);
+    this.parallaxBack.spine.addSlotObject('guitarContainer', guitarInteractive.displayObject);
+
+    guitarInteractive.setClickHandler(() => {
+      this.interactionManager.unregister('guitar');
+      guitarInteractive.disable();
+      guitarInteractive.removeHighlight();
+      guitar.destroy();
+      this.inventory.addItem('guitar');
+    });
+
+    this.interactionManager.register(guitarInteractive);
+
+    /// ///// ГРИБ
+    const mashroom = Sprite.from('mashroom');
+    mashroom.anchor.set(0.5);
+
+    const mashroomInteractive = new SpriteInteractiveObject('mashroom', mashroom);
+    this.parallaxBack.spine.addSlotObject('mushroomContainer', mashroomInteractive.displayObject);
+
+    mashroomInteractive.setClickHandler(() => {
+      this.interactionManager.unregister('mashroom');
+      mashroomInteractive.disable();
+      mashroomInteractive.removeHighlight();
+      mashroom.destroy();
+      this.inventory.addItem('mashroom');
+    });
+
+    this.interactionManager.register(mashroomInteractive);
+
+    /// ///// МАШИНА
+    this.shadowCar = Sprite.from('carEmpty');
+    this.shadowCar.anchor.set(0.5);
+    this.shadowCar.position.set(2000, 750);
+    this.shadowCar.visible = false;
+
+    const carInteractive = new SpriteInteractiveObject('carEmpty', this.shadowCar);
+    this.mainContainer.addChild(carInteractive.displayObject);
+
+    carInteractive.setClickHandler(() => {
+      this.interactionManager.unregister('carEmpty');
+      carInteractive.disable();
+      carInteractive.removeHighlight();
+      if (this.shadowCar) this.shadowCar.destroy();
+      this.startCarGame();
+    });
+
+    this.interactionManager.register(mashroomInteractive);
   }
 
+  /// МАШИНА
   private startCarGame() {
     /// /////////// TEST MINIGAME ////////////////
 
@@ -237,6 +289,10 @@ export class GameScreen extends Container implements AppScreen {
                 this.currentMinigame.destroy({ children: true });
                 this.currentMinigame = null;
               }
+
+              this.inventory.addItem('ring');
+              this.ringGet = true;
+
               this.resume();
             };
 
@@ -249,7 +305,8 @@ export class GameScreen extends Container implements AppScreen {
     this.playMinigame();
   }
 
-  /* private startDudeMinigame() {
+  /// ГРИБ
+  private startDudeMinigame() {
     this.currentMinigame = new DudeMushroom(
       () => {}, // Коллбек при инициализации
       () => {
@@ -269,6 +326,10 @@ export class GameScreen extends Container implements AppScreen {
                 this.currentMinigame = null;
               }
               this.resume();
+
+              this.cameraHorizontalMove.resetCameraPosition();
+              (this.getControllerByType(DudeController) as DudeController).driveAway();
+              this.dudeDrive = true;
             };
 
             onComplete();
@@ -278,9 +339,10 @@ export class GameScreen extends Container implements AppScreen {
     );
 
     this.playMinigame();
-  } */
+  }
 
-  /* private startBackpackMinigame() {
+  /// РЮКАЗАК
+  private startBackpackMinigame() {
     this.currentMinigame = new BackpackGame(
       () => {}, // Коллбек при инициализации
       () => {
@@ -291,6 +353,8 @@ export class GameScreen extends Container implements AppScreen {
           y: 0,
           ease: 'power1.out',
           onStart: () => {
+            this.inventory.addItem('match');
+
             this.inventoryContainer.visible = true;
             const onComplete = async () => {
               await engine().navigation.dismissPopup();
@@ -309,8 +373,9 @@ export class GameScreen extends Container implements AppScreen {
     );
 
     this.playMinigame();
-  } */
+  }
 
+  /// СПИЧКИ
   private startMatchesGame() {
     /// /////////// TEST MINIGAME ////////////////
 
@@ -334,6 +399,38 @@ export class GameScreen extends Container implements AppScreen {
                 this.currentMinigame = null;
               }
               this.resume();
+
+              this.cameraHorizontalMove.resetCameraPosition();
+
+              setTimeout(() => {
+                (this.getControllerByType(BoyController) as BoyController).setFireState(true);
+                (this.getControllerByType(DudeController) as DudeController).setFireState(true);
+                (this.getControllerByType(GirlController) as GirlController).setFireState(true);
+                (this.getControllerByType(BonfireController) as BonfireController).lightFire();
+                this.bonfireFire = true;
+
+                this.parallaxBack.playIdle();
+
+                /// // МАРЩМЕЛОУ
+                const marshmelow = Sprite.from('food');
+                marshmelow.anchor.set(0.5);
+
+                const marshmelowInteractive = new SpriteInteractiveObject('food', marshmelow);
+                this.parallaxBack.spine.addSlotObject('marshmeloContainer', marshmelowInteractive.displayObject);
+
+                marshmelowInteractive.setClickHandler(() => {
+                  this.interactionManager.unregister('food');
+                  marshmelowInteractive.disable();
+                  marshmelowInteractive.removeHighlight();
+                  marshmelow.destroy();
+
+                  this.marshmeloGet = true;
+
+                  (this.getControllerByType(GirlController) as GirlController).giveStick();
+                });
+
+                this.interactionManager.register(marshmelowInteractive);
+              }, 200);
             };
 
             onComplete();
@@ -375,6 +472,18 @@ export class GameScreen extends Container implements AppScreen {
       if (result.actionType === 'light_fire') {
         // Зажигаем костер
         this.startMatchesGame();
+      } else if (result.actionType === 'guitar_play') {
+        (this.getControllerByType(BoyController) as BoyController).giveGuitar();
+        this.guitarPlay = true;
+      } else if (result.actionType === 'give_mushroom') {
+        this.startDudeMinigame();
+      } else if (result.actionType === 'give_ring') {
+        if (this.guitarPlay && this.bonfireFire && this.marshmeloGet && this.dudeDrive && this.ringGet) {
+          this.gameOver();
+        } else {
+          this.inventory.cancelInteraction(id);
+          return false;
+        }
       }
 
       // Удаляем предмет из инвентаря, если он был потреблен
@@ -398,13 +507,13 @@ export class GameScreen extends Container implements AppScreen {
     this.itemsDragging.addItem(x, y, id, type);
   }
 
-  private testFuillInventory() {
-    const objects: string[] = ['button', 'icon-pause', 'icon-settings', 'rounded-rectangle', 'white_flash'];
+  /* private testFuillInventory() {
+    const objects: string[] = ['match', 'ring'];
 
     objects.forEach((object) => {
       this.inventory.addItem(object);
     });
-  }
+  } */
 
   private inventoryItemCallback = (item: string) => {
     // console.log('Кликаем по объекту в инвентаре', item);
@@ -538,7 +647,8 @@ export class GameScreen extends Container implements AppScreen {
   public async show(): Promise<void> {
     engine().audio.bgm.play('main/sounds/bgm-main.mp3', { volume: 0.5 });
 
-    const elementsToAnimate = [this.settingsButton, this.inventory];
+    // const elementsToAnimate = [this.settingsButton, this.inventory];
+    const elementsToAnimate = [this.inventory];
 
     let finalPromise!: gsap.core.Tween;
     for (const element of elementsToAnimate) {
@@ -558,9 +668,9 @@ export class GameScreen extends Container implements AppScreen {
 
   /** Auto pause the app when window go out of focus */
   public blur() {
-    if (!engine().navigation.currentPopup) {
+    /* if (!engine().navigation.currentPopup) {
       engine().navigation.presentPopup(PausePopup);
-    }
+    } */
   }
 
   /**
@@ -602,5 +712,9 @@ export class GameScreen extends Container implements AppScreen {
     controllerClass: new (...args: any[]) => T,
   ): T | undefined {
     return this.spineObjectControllers.find((controller) => controller instanceof controllerClass) as T | undefined;
+  }
+
+  public gameOver() {
+    engine().navigation.presentPopup(GameEndPopup);
   }
 }
